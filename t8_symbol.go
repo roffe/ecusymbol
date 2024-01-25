@@ -6,51 +6,6 @@ import (
 	"log"
 )
 
-var T8SymbolsTuningOrder = []string{
-	"Calibration",
-	"Injectors",
-	"Limiters",
-	"Fuel",
-	"Boost",
-	"Ignition",
-	"Adaption",
-}
-
-var T8SymbolsTuning = map[string][]string{
-	"Calibration": {},
-	"Injectors": {
-		"InjCorrCal.InjectorConst",
-		"InjCorrCal.BattCorrTab",
-		"InjCorrCal.BattCorrSP",
-	},
-	"Limiters": {
-		"BstKnkCal.MaxAirmass",
-		"AirCtrlCal.AirmassLimiter",
-	},
-	"Fuel": {
-		"BFuelCal.LambdaOneFacMap",
-		"BFuelCal.TempEnrichFacMap",
-		"FFFuelCal.TempEnrichFacMAP",
-	},
-	"Boost": {
-		//"...|AirCtrlCal.RegMap|AirCtrlCal.Ppart_BoostMap|AirCtrlCal.Ipart_BoostMap|AirCtrlCal.Dpart_BoostMap",
-		"AirCtrlCal.RegMap",
-		"AirCtrlCal.Ppart_BoostMap",
-		"AirCtrlCal.Ipart_BoostMap",
-		"AirCtrlCal.Dpart_BoostMap",
-		"AirCtrlCal.ST_BoostEnable",
-		"BoostAdapCal.ST_enable",
-		"FrompAdapCal.ST_enable",
-		"AreaAdapCal.ST_enable",
-	},
-	"Ignition": {
-		"IgnAbsCal.fi_NormalMAP",
-		"IgnAbsCal.fi_highOctanMAP",
-		"IgnAbsCal.ST_EnableOctanMaps",
-	},
-	"Adaption": {},
-}
-
 func LoadT8Symbols(fileBytes []byte, cb func(string)) (*Collection, error) {
 	if err := IsTrionic8File(fileBytes); err != nil {
 		return nil, err

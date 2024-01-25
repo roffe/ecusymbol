@@ -42,7 +42,7 @@ var axisT8 = AxisInformation{
 		"ActualIn.n_Engine",
 	},
 	"BstKnkCal.MaxAirmass": Axis{
-		"BstKnkCal.fi_offsetXSP", // BioPower "BstKnkCal.fi_offsetXSP"
+		"BstKnkCal.OffsetXSP", // BioPower "BstKnkCal.fi_offsetXSP"
 		"BstKnkCal.n_EngYSP",
 		"BstKnkCal.MaxAirmass",
 		"° ignition retard (Ioff)",

@@ -71,7 +71,10 @@ func LoadSymbols(filename string, cb func(string)) (ECUType, SymbolCollection, e
 	}
 
 	if err := IsTrionic8File(data); err == nil {
-		sym, err := LoadT8Symbols(data, cb)
+		sym, err := NewT8File(data,
+			WithAutoCorrect(),
+			WithT8PrintFunc(func(str string, v ...any) { cb(fmt.Sprintf(str, v...)) }),
+		)
 		return ECU_T8, sym, err
 	}
 

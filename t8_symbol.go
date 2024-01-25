@@ -51,10 +51,7 @@ var T8SymbolsTuning = map[string][]string{
 	"Adaption": {},
 }
 
-type T8Binary struct {
-}
-
-func LoadT8Symbols(fileBytes []byte, cb func(string)) (SymbolCollection, error) {
+func LoadT8Symbols(fileBytes []byte, cb func(string)) (*Collection, error) {
 	if err := IsTrionic8File(fileBytes); err != nil {
 		return nil, err
 	}

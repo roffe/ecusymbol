@@ -152,6 +152,7 @@ func (t7 *T7File) Save(filename string) error {
 	if err := t7.VerifyChecksum(); err != nil {
 		return err
 	}
+
 	err := os.WriteFile(filename, t7.data, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to write %s : %w", filename, err)

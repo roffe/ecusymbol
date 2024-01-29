@@ -65,29 +65,36 @@ func LoadT8Symbols(fileBytes []byte, cb func(string)) (*Collection, error) {
 
 	openBin := false
 
+	if secOffset > 0 {
+		openBin = true
+	}
+
 	for i, sym := range symbols {
-		origAddress := sym.Address
+		//origAddress := sym.Address
 		var actAddress uint32
 		if sym.Address >= 0x100000 {
 			if sym.Type != 0xFF && sym.Type&0x22 == 0x02 {
-				//				log.Println("asdXX")
-				if !openBin {
-					if sym.Address+uint32(sym.Length) <= (0x100000+32768) && sym.Address >= uint32(priOffset) {
+				if openBin {
+					// Open binary, offsets are switched up
+					if sym.Address+uint32(sym.Length) <= (0x100000+32768) && sym.Address >= uint32(secOffset) {
+						// Internal SRAM, use the secondary offset
+						sym.SramOffset = uint32(secOffset)
+						actAddress = sym.Address - uint32(secOffset)
+					} else if sym.Address >= (0x100000+32768) && sym.Address >= uint32(priOffset) {
+						// External SRAM, use the primary offset
 						sym.SramOffset = uint32(priOffset)
 						actAddress = sym.Address - uint32(priOffset)
 					}
 				} else {
-					if sym.Address+uint32(sym.Length) <= (0x100000+32768) && sym.Address >= uint32(secOffset) {
-						sym.SramOffset = uint32(secOffset)
-						actAddress = sym.Address - uint32(secOffset)
-					} else if sym.Address >= (0x100000+32768) && sym.Address >= uint32(priOffset) {
+					// Normal binary, use the primary offset
+					if sym.Address+uint32(sym.Length) <= (0x100000+32768) && sym.Address >= uint32(priOffset) {
 						sym.SramOffset = uint32(priOffset)
 						actAddress = sym.Address - uint32(priOffset)
 					}
 				}
 				if actAddress+uint32(sym.Length) <= 0x100000 && actAddress > 0 {
+					// Real address must be within range
 					sym.Address = actAddress
-					//sym.data = extractT8SymbolData2(fileBytes, actAddress, sym.Length)
 				}
 			}
 		}
@@ -97,7 +104,7 @@ func LoadT8Symbols(fileBytes []byte, cb func(string)) (*Collection, error) {
 		sym.Correctionfactor = GetCorrectionfactor(sym.Name)
 
 		extractT8SymbolData(sym, fileBytes)
-		sym.Address = origAddress
+		//sym.Address = origAddress
 		//d := extractT8SymbolData2(fileBytes, actAddress, sym.Length)
 		//log.Printf("1> % X", d)
 		//log.Printf("2> % X", sym.data)
@@ -119,7 +126,7 @@ func LoadT8Symbols(fileBytes []byte, cb func(string)) (*Collection, error) {
 
 func extractT8SymbolData(sym *Symbol, data []byte) {
 	if sym.Address < 0x020000 || sym.Address+uint32(sym.Length) > uint32(len(data)) {
-		//	log.Printf("Symbol %s out of range: 0x%X - 0x%X\n", sym.Name, sym.Address, sym.Address+uint32(sym.Length))
+		// log.Printf("Symbol %s out of range: 0x%X - 0x%X\n", sym.Name, sym.Address, sym.Address+uint32(sym.Length))
 		return
 	}
 	sym.data = data[sym.Address : sym.Address+uint32(sym.Length)]
@@ -217,13 +224,14 @@ func CountNq(data []byte, offset int) int {
 	return cnt
 }
 
+var symPattern = []byte{0x73, 0x59, 0x4D, 0x42, 0x4F, 0x4C, 0x74, 0x41, 0x42, 0x4C, 0x45}
+
 func GetEndOfSymbolTable(data []byte) (int, error) {
-	pattern := []byte{0x73, 0x59, 0x4D, 0x42, 0x4F, 0x4C, 0x74, 0x41, 0x42, 0x4C, 0x45}
-	pos := BytePatternSearch(data, pattern, 0)
+	pos := BytePatternSearch(data, symPattern, 0)
 	if pos == -1 {
 		return -1, ErrEndOfSymbolTableNotFound
 	}
-	return pos + len(pattern) - 1, nil
+	return pos + len(symPattern) - 1, nil
 }
 
 func GetFirstNqStringFromOffset(data []byte, offset int) (int, error) {

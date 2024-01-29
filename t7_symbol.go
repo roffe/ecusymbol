@@ -9,6 +9,8 @@ import (
 	"log"
 	"strconv"
 	"strings"
+
+	"github.com/roffe/ecusymbol/kmp"
 )
 
 const (
@@ -123,7 +125,7 @@ outer:
 
 	// log.Printf("Search pattern: %X", searchPattern)
 
-	addressTableOffset := BytePatternSearch(data, searchPattern, 0)
+	addressTableOffset := kmp.BytePatternSearch(data, searchPattern, 0)
 	cb(fmt.Sprintf("Address table offset: %X", addressTableOffset))
 
 	if addressTableOffset == -1 {
@@ -282,7 +284,7 @@ func binaryPacked(data []byte, cb func(string)) (*Collection, error) {
 }
 
 func readAllT7SymbolsData(fileBytes []byte, symbols []*Symbol) error {
-	dataLocationOffset := BytePatternSearch(fileBytes, searchPattern, 0x30000) - 10
+	dataLocationOffset := kmp.BytePatternSearch(fileBytes, searchPattern, 0x30000) - 10
 	dataOffsetValue := binary.BigEndian.Uint32(fileBytes[dataLocationOffset : dataLocationOffset+4])
 
 	//sram_offset, err := GetAddressFromOffset(fileBytes, dataLocationOffset+4)
@@ -371,7 +373,7 @@ var searchPattern = []byte{0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 //var searchPattern3 = []byte{0x73, 0x59, 0x4D, 0x42, 0x4F, 0x4C, 0x74, 0x41, 0x42, 0x4C, 0x45, 0x00} // 12
 
 func getOffsets(data []byte, cb func(string)) (bool, int, int, int, error) {
-	addressTableOffset := BytePatternSearch(data, searchPattern, 0x30000) - 0x06
+	addressTableOffset := kmp.BytePatternSearch(data, searchPattern, 0x30000) - 0x06
 	cb(fmt.Sprintf("Address table offset: %08X", addressTableOffset))
 
 	sramTableOffset := getAddressFromOffset(data, addressTableOffset-0x04)

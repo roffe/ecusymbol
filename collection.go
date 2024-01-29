@@ -95,11 +95,7 @@ func (c *Collection) GetXYZ(xAxis, yAxis, zAxis string) ([]int, []int, []int, fl
 	if symz == nil {
 		return nil, nil, nil, 0, 0, 0, fmt.Errorf("%s not found", zAxis)
 	}
-
-	//	log.Println("symz", symz.Bytes())
-
 	zOut := symz.Ints()
-
 	var xOut, yOut []int
 	xFac, yFac := 1.0, 1.0
 	if symx == nil {
@@ -133,7 +129,6 @@ func (c *Collection) GetXYZ(xAxis, yAxis, zAxis string) ([]int, []int, []int, fl
 			return nil, nil, nil, 0, 0, 0, fmt.Errorf("failed to find %s", k)
 		}
 	}
-
 	return nil, nil, nil, 0, 0, 0, fmt.Errorf("failed to convert x:%s y:%s z:%s", xAxis, yAxis, zAxis)
 }
 

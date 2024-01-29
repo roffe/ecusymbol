@@ -4,6 +4,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"log"
+
+	"github.com/roffe/ecusymbol/kmp"
 )
 
 func LoadT8Symbols(fileBytes []byte, cb func(string)) (*Collection, error) {
@@ -227,7 +229,7 @@ func CountNq(data []byte, offset int) int {
 var symPattern = []byte{0x73, 0x59, 0x4D, 0x42, 0x4F, 0x4C, 0x74, 0x41, 0x42, 0x4C, 0x45}
 
 func GetEndOfSymbolTable(data []byte) (int, error) {
-	pos := BytePatternSearch(data, symPattern, 0)
+	pos := kmp.BytePatternSearch(data, symPattern, 0)
 	if pos == -1 {
 		return -1, ErrEndOfSymbolTableNotFound
 	}
@@ -295,7 +297,7 @@ outer:
 }
 
 func FindAddressTableOffset(data []byte) error {
-	pos := BytePatternSearch(data, []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20}, 0x3000)
+	pos := kmp.BytePatternSearch(data, []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20}, 0x3000)
 	if pos == -1 {
 		return ErrAddressTableOffsetNotFound
 	}

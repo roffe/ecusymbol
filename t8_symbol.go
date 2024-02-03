@@ -65,7 +65,42 @@ func LoadT8Symbols(fileBytes []byte, cb func(string)) (*Collection, error) {
 	log.Printf("priOffset: 0x%X\n", priOffset)
 	log.Printf("secOffset: 0x%X\n", secOffset)
 
-	openBin := false
+	/*
+	   static private void DetermineBinaryOpenness(SymbolCollection symbols, byte[] data)
+	   {
+	       const int MinRequiredLevel = 2;
+	       int level = 0;
+
+
+	       // Determine open/closed by looking at symbol names
+	       if (DetermineOpen_FromSymbolNames(symbols) == true)
+	       {
+	           level++;
+	       }
+
+	       // Determine open/closed by looking at symbol address
+	       if (DetermineOpen_FromSymbolAddress(symbols) == true)
+	       {
+	           level++;
+	       }
+
+	       // This one has extra weight since the address should be present in a LOT of places
+	       if (DetermineOpen_FromData(data) == false)
+	       {
+	           level--;
+	       }
+	       else
+	       {
+	           level++;
+	       }
+
+	       logger.Debug("Binary openness level: " + level.ToString());
+	       m_openbin = (level >= MinRequiredLevel);
+	   }
+
+	*/
+
+	var openBin bool = true
 
 	if secOffset > 0 {
 		openBin = true

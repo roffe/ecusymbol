@@ -1,6 +1,7 @@
 package symbol
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"os"
@@ -10,6 +11,8 @@ const (
 	T7Length      = 0x80000
 	T7SRAMAddress = 0x0F00000
 )
+
+var T7MagicBytes = []byte{0xFF, 0xFF, 0xEF, 0xFC, 0x00}
 
 type T7File struct {
 	autoFixFooter bool
@@ -72,6 +75,13 @@ func WithPrintFunc(f func(string, ...any)) T7FileOpt {
 }
 
 func NewT7File(data []byte, opts ...T7FileOpt) (*T7File, error) {
+	if len(data) != T7Length {
+		return nil, ErrInvalidLength
+	}
+	if !bytes.HasPrefix(data, T7MagicBytes) {
+		return nil, ErrMagicBytesNotFound
+	}
+
 	t7 := &T7File{
 		data:            data,
 		chassisID:       "00000000000000000",
@@ -101,7 +111,7 @@ func NewT7File(data []byte, opts ...T7FileOpt) (*T7File, error) {
 
 func (t7 *T7File) init() (*T7File, error) {
 	t7.loadHeaders()
-	symbols, err := LoadT7Symbols(t7.data, func(s string) {
+	symbols, err := loadT7Symbols(t7.data, func(s string) {
 		t7.printFunc(s)
 	})
 	if err != nil {

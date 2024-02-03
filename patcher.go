@@ -89,7 +89,6 @@ func ReadTuningPackage(data []byte) (*Patch, error) {
 				}
 			}
 		}
-
 	}
 
 	if err := scanner.Err(); err != nil {

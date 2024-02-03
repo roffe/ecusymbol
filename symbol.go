@@ -12,6 +12,8 @@ import (
 )
 
 type Symbol struct {
+	data []byte
+
 	Name             string
 	Number           int
 	SramOffset       uint32
@@ -22,45 +24,37 @@ type Symbol struct {
 	ExtendedType     uint8
 	Correctionfactor float64
 	Unit             string `json:",omitempty"`
-
-	data []byte
 }
 
-func LoadSymbols(filename string, cb func(string)) (ECUType, SymbolCollection, error) {
-	// check so filename is under 2mb
-	fi, err := os.Stat(filename)
+func Load(filename string, printFunc func(string)) (ECUType, SymbolCollection, error) {
+	ecuType, err := DetectType(filename)
 	if err != nil {
-		return -1, nil, err
+		return ECU_UNKNOWN, nil, err
 	}
-	if fi.Size() > 2*1024*1024 {
-		return -1, nil, fmt.Errorf("file too large: %d", fi.Size())
-	}
+
+	printFunc(fmt.Sprintf("Loading %s", filepath.Base(filename)))
 
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		return -1, nil, err
 	}
 
-	cb(fmt.Sprintf("Loading %s", filepath.Base(filename)))
-
-	if err := IsTrionic7File(data); err == nil {
+	switch ecuType {
+	case ECU_T7:
 		sym, err := NewT7File(data,
 			WithAutoFixFooter(),
-			WithPrintFunc(func(str string, v ...any) { cb(fmt.Sprintf(str, v...)) }),
+			WithPrintFunc(func(str string, v ...any) { printFunc(fmt.Sprintf(str, v...)) }),
 		)
-		//sym, err := LoadT7Symbols(data, cb)
 		return ECU_T7, sym, err
-	}
-
-	if err := IsTrionic8File(data); err == nil {
+	case ECU_T8:
 		sym, err := NewT8File(data,
 			WithAutoCorrect(),
-			WithT8PrintFunc(func(str string, v ...any) { cb(fmt.Sprintf(str, v...)) }),
+			WithT8PrintFunc(func(str string, v ...any) { printFunc(fmt.Sprintf(str, v...)) }),
 		)
 		return ECU_T8, sym, err
+	default:
+		return -1, nil, fmt.Errorf("unknown file format: %s", filename)
 	}
-
-	return -1, nil, fmt.Errorf("unknown file format: %s", filename)
 }
 
 func (s *Symbol) SetData(data []byte) error {

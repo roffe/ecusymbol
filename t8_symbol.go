@@ -8,11 +8,7 @@ import (
 	"github.com/roffe/ecusymbol/kmp"
 )
 
-func LoadT8Symbols(fileBytes []byte, cb func(string)) (*Collection, error) {
-	if err := IsTrionic8File(fileBytes); err != nil {
-		return nil, err
-	}
-
+func loadT8Symbols(fileBytes []byte, cb func(string)) (*Collection, error) {
 	//addressTableOffset, err := GetAddrTableOffsetBySymbolTable(fileBytes)
 	//if err != nil {
 	//	return nil, err
@@ -207,16 +203,6 @@ func ReadAddressTable(data []byte, offset int) ([]*Symbol, error) {
 		}
 	}
 	return symbols, nil
-}
-
-func IsTrionic8File(data []byte) error {
-	if len(data) != 0x100000 {
-		return ErrInvalidLength
-	}
-	if data[0] == 0x00 && (data[1] == 0x10 || data[1] == 0x00) && data[2] == 0x0C && data[3] == 0x00 {
-		return nil
-	}
-	return ErrInvalidTrionic8File
 }
 
 func GetAddressFromOffset(data []byte, offset int) (int, error) {

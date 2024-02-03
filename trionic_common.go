@@ -10,11 +10,20 @@ import (
 	"github.com/roffe/ecusymbol/lzhuf"
 )
 
+const (
+	SIGNED   = 0x01 /* signed flag in type */
+	KONST    = 0x02 /* konstant flag in type */
+	CHAR     = 0x04 /* character flag in type */
+	LONG     = 0x08 /* long flag in type */
+	BITFIELD = 0x10 /* bitfield flag in type */
+	STRUCT   = 0x20 /* struct flag in type */
+)
+
 func ExpandCompressedSymbolNames(in []byte) ([]string, error) {
 	if len(in) < 0x1000 {
 		return nil, errors.New("invalid symbol table size")
 	}
-	//os.WriteFile("compressedSymbolTable.bin", in, 0644)
+
 	if bytes.HasPrefix(in, []byte{0xF1, 0x1A, 0x06, 0x5B, 0xA2, 0x6B, 0xCC, 0x6F}) {
 		return blowfish.DecryptSymbolNames(in)
 	}

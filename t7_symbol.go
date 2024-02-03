@@ -13,25 +13,6 @@ import (
 	"github.com/roffe/ecusymbol/kmp"
 )
 
-const (
-	SIGNED   = 0x01 /* signed flag in type */
-	KONST    = 0x02 /* konstant flag in type */
-	CHAR     = 0x04 /* character flag in type */
-	LONG     = 0x08 /* long flag in type */
-	BITFIELD = 0x10 /* bitfield flag in type */
-	STRUCT   = 0x20 /* struct flag in type */
-)
-
-func IsTrionic7File(data []byte) error {
-	if len(data) != 0x80000 {
-		return ErrInvalidLength
-	}
-	if !bytes.HasPrefix(data, []byte{0xFF, 0xFF, 0xEF, 0xFC}) {
-		return ErrInvalidTrionic7File
-	}
-	return nil
-}
-
 func newFromT7Bytes(data []byte, symbol_number int) *Symbol {
 	extractUint32 := func(data []byte, start int) uint32 {
 		return uint32(data[start])<<24 | uint32(data[start+1])<<16 | uint32(data[start+2])<<8 | uint32(data[start+3])
@@ -62,11 +43,7 @@ func newFromT7Bytes(data []byte, symbol_number int) *Symbol {
 	}
 }
 
-func LoadT7Symbols(data []byte, cb func(string)) (*Collection, error) {
-	if err := IsTrionic7File(data); err != nil {
-		return nil, err
-	}
-
+func loadT7Symbols(data []byte, cb func(string)) (*Collection, error) {
 	for _, h := range GetAllT7HeaderFields(data) {
 		switch h.ID {
 		case 0x91, 0x94, 0x95, 0x97:
@@ -74,7 +51,7 @@ func LoadT7Symbols(data []byte, cb func(string)) (*Collection, error) {
 		}
 	}
 
-	if !IsBinaryPackedVersion(data, 0x9B) {
+	if !isBinaryPackedVersion(data, 0x9B) {
 		//return nil, errors.New("non binarypacked not implemented, send your bin to Roffe")
 		//log.Println("Not a binarypacked version")
 		cb("Not a binarypacked symbol table")
@@ -447,7 +424,7 @@ func readMarkerAddressContent(data []byte, marker byte) (length, retval, val int
 	return
 }
 
-func IsBinaryPackedVersion(data []byte, filelength int) bool {
+func isBinaryPackedVersion(data []byte, filelength int) bool {
 	length, retval, _, err := readMarkerAddressContent(data, 0x9B)
 	if err != nil {
 		panic(err)

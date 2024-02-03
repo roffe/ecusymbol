@@ -10,6 +10,12 @@ import (
 	"os"
 )
 
+const (
+	T8Length = 0x100000
+)
+
+var T8MagicBytes = []byte{0x00, 0x10, 0x0C, 0x00}
+
 type T8File struct {
 	data []byte // the raw data
 	*Collection
@@ -34,13 +40,12 @@ func WithT8PrintFunc(f func(string, ...any)) T8FileOpt {
 	}
 }
 
-var ErrWrongT8FileSize = errors.New("wrong t8 file size")
-
-var _ SymbolCollection = &T8File{}
-
 func NewT8File(data []byte, opts ...T8FileOpt) (*T8File, error) {
-	if len(data) != 0x100000 {
-		return nil, ErrWrongT8FileSize
+	if len(data) != T8Length {
+		return nil, ErrInvalidLength
+	}
+	if !bytes.HasPrefix(data, T8MagicBytes) {
+		return nil, ErrMagicBytesNotFound
 	}
 
 	t8 := &T8File{
@@ -54,6 +59,7 @@ func NewT8File(data []byte, opts ...T8FileOpt) (*T8File, error) {
 			return nil, err
 		}
 	}
+
 	return t8.init()
 }
 
@@ -62,7 +68,7 @@ func (t8 *T8File) init() (*T8File, error) {
 		return nil, err
 	}
 
-	col, err := LoadT8Symbols(t8.data, func(s string) {
+	col, err := loadT8Symbols(t8.data, func(s string) {
 		t8.printFunc(s)
 	})
 	if err != nil {
@@ -106,7 +112,7 @@ func (t8 *T8File) Save(filename string) error {
 
 func (t8 *T8File) VerifyChecksum() error {
 	if len(t8.data) != 0x100000 {
-		return ErrWrongT8FileSize
+		return ErrInvalidLength
 	}
 
 	offset, err := t8.GetChecksumAreaOffset(t8.data)

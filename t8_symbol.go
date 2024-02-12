@@ -3,7 +3,6 @@ package symbol
 import (
 	"encoding/binary"
 	"fmt"
-	"log"
 
 	"github.com/roffe/ecusymbol/kmp"
 )
@@ -58,8 +57,8 @@ func loadT8Symbols(fileBytes []byte, cb func(string)) (*Collection, error) {
 	}
 
 	secOffset := DetermineSecondaryOffset(fileBytes)
-	log.Printf("priOffset: 0x%X\n", priOffset)
-	log.Printf("secOffset: 0x%X\n", secOffset)
+	cb(fmt.Sprintf("Primary Offset: 0x%X\n", priOffset))
+	cb(fmt.Sprintf("Secondary Offset: 0x%X\n", secOffset))
 
 	/*
 	   static private void DetermineBinaryOpenness(SymbolCollection symbols, byte[] data)

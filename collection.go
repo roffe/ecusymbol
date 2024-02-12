@@ -16,6 +16,7 @@ type SymbolCollection interface {
 	Count() int
 	Add(symbols ...*Symbol)
 	Save(filename string) error
+	Version() string
 }
 
 type Collection struct {
@@ -89,6 +90,10 @@ func (c *Collection) Dump() string {
 		out.WriteString("\n")
 	}
 	return out.String()
+}
+
+func (c *Collection) Version() string {
+	return ""
 }
 
 func (c *Collection) GetXYZ(xAxis, yAxis, zAxis string) ([]int, []int, []int, float64, float64, float64, error) {

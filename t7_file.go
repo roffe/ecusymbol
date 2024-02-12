@@ -54,7 +54,8 @@ type T7File struct {
 
 	csumArea [16]T7ChecksumArea
 
-	printFunc   func(string, ...any)
+	printFunc func(string, ...any)
+
 	*Collection // the symbol collection
 }
 
@@ -168,4 +169,8 @@ func (t7 *T7File) Save(filename string) error {
 		return fmt.Errorf("failed to write %s : %w", filename, err)
 	}
 	return nil
+}
+
+func (t7 *T7File) Version() string {
+	return t7.softwareVersion
 }

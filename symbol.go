@@ -119,6 +119,21 @@ func (s *Symbol) String() string {
 	return fmt.Sprintf("%s #%d @%X $%X type: %02X len: %d", s.Name, s.Number, s.Address, s.SramOffset, s.Type, s.Length)
 }
 
+func (s *Symbol) CString() string {
+	n := -1
+	for i, v := range s.data {
+		if v == 0 {
+			n = i
+			break
+		}
+	}
+	// If there was no null byte, convert the whole slice.
+	if n == -1 {
+		n = len(s.data)
+	}
+	return string(s.data[:n])
+}
+
 func (s *Symbol) StringValue() string {
 	// return toValueString(s.Float64(), s.Correctionfactor)
 	var precission int

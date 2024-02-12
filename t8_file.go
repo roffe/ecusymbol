@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 )
 
 const (
@@ -108,6 +109,14 @@ func (t8 *T8File) Save(filename string) error {
 	}
 
 	return nil
+}
+
+func (t8 *T8File) Version() string {
+	sym := t8.GetByName("ECUIDCal.ApplicationFileName")
+	if sym == nil {
+		return "unknown"
+	}
+	return strings.TrimSpace(sym.CString())
 }
 
 func (t8 *T8File) VerifyChecksum() error {

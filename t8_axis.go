@@ -62,6 +62,16 @@ var axisT8 = AxisInformation{
 		"MAF.m_AirInlet",
 		"ActualIn.n_Engine",
 	},
+	"IgnAbsCal.fi_lowOctanMAP": Axis{
+		"IgnAbsCal.m_AirNormXSP",
+		"IgnAbsCal.n_EngNormYSP",
+		"IgnAbsCal.fi_highOctanMAP",
+		"",
+		"",
+		"",
+		"MAF.m_AirInlet",
+		"ActualIn.n_Engine",
+	},
 	"IgnAbsCal.fi_highOctanMAP": Axis{
 		"IgnAbsCal.m_AirNormXSP",
 		"IgnAbsCal.n_EngNormYSP",

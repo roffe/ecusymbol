@@ -28,6 +28,8 @@ var correctionFactors = map[string]float64{
 	"ECMStat.p_Diff":            0.001,
 	"ECMStat.p_DiffThrot":       0.001,
 	"IgnAbsCal.fi_NormalMAP":    0.1,
+	"IgnAbsCal.fi_lowOctanMAP":  0.1,
+	"IgnAbsCal.fi_highOctanMAP": 0.1,
 	"IgnIdleCal.fi_IdleMap":     0.1,
 	"IgnMastProt.fi_Offset":     0.1,
 	"IgnNormCal.Map":            0.1,

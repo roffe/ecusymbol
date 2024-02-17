@@ -2,7 +2,6 @@ package symbol
 
 import (
 	"fmt"
-	"log"
 )
 
 type AxisInformation map[string]Axis
@@ -60,6 +59,6 @@ func GetInfo(ecu ECUType, name string) Axis {
 			"",
 		}
 	}
-	log.Println(axis)
+	//log.Println(axis)
 	return axis
 }

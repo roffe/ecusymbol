@@ -97,22 +97,29 @@ func (c *Collection) Version() string {
 }
 
 func (c *Collection) GetXYZ(xAxis, yAxis, zAxis string) ([]int, []int, []int, float64, float64, float64, error) {
+	log.Printf("GetXYZ(%s, %s, %s)", xAxis, yAxis, zAxis)
 	symx, symy, symz := c.GetByName(xAxis), c.GetByName(yAxis), c.GetByName(zAxis)
 	if symz == nil {
 		return nil, nil, nil, 0, 0, 0, fmt.Errorf("%s not found", zAxis)
 	}
 
-	if symx != nil {
-		log.Printf("symx: %X", symx.Bytes())
+	// Dirty workaround for non-biopower T8 bins
+	if symx == nil && xAxis == "BstKnkCal.fi_offsetXSP" {
+		log.Println("Using BstKnkCal.OffsetXSP instead of BstKnkCal.fi_offsetXSP")
+		symx = c.GetByName("BstKnkCal.OffsetXSP")
 	}
 
-	if symy != nil {
-		log.Printf("symy: %X", symy.Bytes())
-	}
+	/* 	if symx != nil {
+	   		log.Printf("symx: %X", symx.Bytes())
+	   	}
 
-	if symz != nil {
-		log.Printf("symz: %X", symz.Bytes())
-	}
+	   	if symy != nil {
+	   		log.Printf("symy: %X", symy.Bytes())
+	   	}
+
+	   	if symz != nil {
+	   		log.Printf("symz: %X", symz.Bytes())
+	   	} */
 
 	zOut := symz.Ints()
 	var xOut, yOut []int
@@ -127,6 +134,9 @@ func (c *Collection) GetXYZ(xAxis, yAxis, zAxis string) ([]int, []int, []int, fl
 	if symy == nil {
 		if symx == nil {
 			yOut = make([]int, len(zOut))
+			for i := range yOut {
+				yOut[i] = i
+			}
 		} else {
 			yOut = []int{0}
 		}

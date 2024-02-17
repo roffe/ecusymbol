@@ -347,10 +347,10 @@ func (s *Symbol) EncodeInts(input []int) []byte {
 
 func (s *Symbol) Ints() []int {
 	signed := s.Type&SIGNED == SIGNED
-	konst := s.Type&KONST == KONST
+	//konst := s.Type&KONST == KONST
 	char := s.Type&CHAR == CHAR
 	long := s.Type&LONG == LONG
-	log.Printf("Ints From Data %s signed: %t konst: %t char: %t long: %t len: %d: type %X", s.Name, signed, konst, char, long, s.Length, s.Type)
+	//log.Printf("Ints From Data %s signed: %t konst: %t char: %t long: %t len: %d: type %X", s.Name, signed, konst, char, long, s.Length, s.Type)
 
 	switch {
 	case char && !signed:

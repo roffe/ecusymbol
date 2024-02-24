@@ -57,8 +57,8 @@ func loadT8Symbols(fileBytes []byte, cb func(string)) (*Collection, error) {
 	}
 
 	secOffset := DetermineSecondaryOffset(fileBytes)
-	cb(fmt.Sprintf("Primary Offset: 0x%X\n", priOffset))
-	cb(fmt.Sprintf("Secondary Offset: 0x%X\n", secOffset))
+	cb(fmt.Sprintf("Primary Offset: 0x%X", priOffset))
+	cb(fmt.Sprintf("Secondary Offset: 0x%X", secOffset))
 
 	/*
 	   static private void DetermineBinaryOpenness(SymbolCollection symbols, byte[] data)
@@ -95,7 +95,7 @@ func loadT8Symbols(fileBytes []byte, cb func(string)) (*Collection, error) {
 
 	*/
 
-	var openBin bool = true
+	var openBin bool = false
 
 	if secOffset > 0 {
 		openBin = true
@@ -158,7 +158,7 @@ func loadT8Symbols(fileBytes []byte, cb func(string)) (*Collection, error) {
 
 func extractT8SymbolData(sym *Symbol, data []byte) {
 	if sym.Address < 0x020000 || sym.Address+uint32(sym.Length) > uint32(len(data)) {
-		// log.Printf("Symbol %s out of range: 0x%X - 0x%X\n", sym.Name, sym.Address, sym.Address+uint32(sym.Length))
+		//log.Printf("Symbol %s out of range: 0x%X - 0x%X\n", sym.Name, sym.Address, sym.Address+uint32(sym.Length))
 		return
 	}
 	sym.data = data[sym.Address : sym.Address+uint32(sym.Length)]

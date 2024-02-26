@@ -3,6 +3,7 @@ package symbol
 import (
 	"encoding/binary"
 	"fmt"
+	"log"
 
 	"github.com/roffe/ecusymbol/kmp"
 )
@@ -60,48 +61,17 @@ func loadT8Symbols(fileBytes []byte, cb func(string)) (*Collection, error) {
 	cb(fmt.Sprintf("Primary Offset: 0x%X", priOffset))
 	cb(fmt.Sprintf("Secondary Offset: 0x%X", secOffset))
 
-	/*
-	   static private void DetermineBinaryOpenness(SymbolCollection symbols, byte[] data)
-	   {
-	       const int MinRequiredLevel = 2;
-	       int level = 0;
-
-
-	       // Determine open/closed by looking at symbol names
-	       if (DetermineOpen_FromSymbolNames(symbols) == true)
-	       {
-	           level++;
-	       }
-
-	       // Determine open/closed by looking at symbol address
-	       if (DetermineOpen_FromSymbolAddress(symbols) == true)
-	       {
-	           level++;
-	       }
-
-	       // This one has extra weight since the address should be present in a LOT of places
-	       if (DetermineOpen_FromData(data) == false)
-	       {
-	           level--;
-	       }
-	       else
-	       {
-	           level++;
-	       }
-
-	       logger.Debug("Binary openness level: " + level.ToString());
-	       m_openbin = (level >= MinRequiredLevel);
-	   }
-
-	*/
-
-	var openBin bool = false
-
-	if secOffset > 0 {
-		openBin = true
+	for i := range symbols {
+		symbols[i].Name = names[i+1]
+		symbols[i].Unit = GetUnit(symbols[i].Name)
+		symbols[i].Correctionfactor = GetCorrectionfactor(symbols[i].Name)
 	}
 
-	for i, sym := range symbols {
+	syms := NewCollection(symbols...)
+
+	openBin := determineBinaryOpenness(fileBytes, syms)
+
+	for _, sym := range symbols {
 		//origAddress := sym.Address
 		var actAddress uint32
 		if sym.Address >= 0x100000 {
@@ -130,10 +100,9 @@ func loadT8Symbols(fileBytes []byte, cb func(string)) (*Collection, error) {
 				}
 			}
 		}
-
-		sym.Name = names[i+1]
-		sym.Unit = GetUnit(sym.Name)
-		sym.Correctionfactor = GetCorrectionfactor(sym.Name)
+		//sym.Name = names[i+1]
+		//sym.Unit = GetUnit(sym.Name)
+		//sym.Correctionfactor = GetCorrectionfactor(sym.Name)
 
 		extractT8SymbolData(sym, fileBytes)
 		//sym.Address = origAddress
@@ -151,9 +120,105 @@ func loadT8Symbols(fileBytes []byte, cb func(string)) (*Collection, error) {
 	//log.Println("Symbols found: ", symb_count)
 	cb(fmt.Sprintf("Loaded %d symbols from binary", len(symbols)))
 
-	syms := NewCollection(symbols...)
-
 	return syms, nil
+}
+
+/*
+   static private void DetermineBinaryOpenness(SymbolCollection symbols, byte[] data)
+   {
+       const int MinRequiredLevel = 2;
+       int level = 0;
+
+
+       // Determine open/closed by looking at symbol names
+       if (DetermineOpen_FromSymbolNames(symbols) == true)
+       {
+           level++;
+       }
+
+       // Determine open/closed by looking at symbol address
+       if (DetermineOpen_FromSymbolAddress(symbols) == true)
+       {
+           level++;
+       }
+
+       // This one has extra weight since the address should be present in a LOT of places
+       if (DetermineOpen_FromData(data) == false)
+       {
+           level--;
+       }
+       else
+       {
+           level++;
+       }
+
+       logger.Debug("Binary openness level: " + level.ToString());
+       m_openbin = (level >= MinRequiredLevel);
+   }
+*/
+
+func determineBinaryOpenness(data []byte, c SymbolCollection) bool {
+	const minRequiredLevel = 2
+	level := 0
+
+	if determineOpen_FromSymbolNames(c) {
+		level++
+	}
+
+	if determineOpen_FromSymbolAddress(c) {
+		level++
+	}
+
+	// This one has extra weight since the address should be present in a LOT of places
+	if !determineOpen_FromData(data) {
+		level--
+	} else {
+		level++
+	}
+
+	log.Println("Binary openness level:", level)
+
+	return level >= minRequiredLevel
+}
+
+func determineOpen_FromSymbolNames(symbols SymbolCollection) bool {
+	for _, sh := range symbols.Symbols() {
+
+		if sh.Address >= T8Length && sh.Length > 0x100 && sh.Length <= 0x400 {
+			if sh.Name == "BFuelCal.LambdaOneFacMap" || sh.Name == "KnkFuelCal.fi_MaxOffsetMap" ||
+				sh.Name == "AirCtrlCal.RegMap" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func determineOpen_FromSymbolAddress(symbols SymbolCollection) bool {
+	for _, sh := range symbols.Symbols() {
+		if sh.Address >= (0x100000 + 32768) {
+			return true
+		}
+	}
+	return false
+}
+
+func determineOpen_FromData(data []byte) bool {
+	addrPat := []byte{0x20, 0x3C, 0x00, 0x14, 0x00, 0x00}
+	addrMsk := []byte{0xf1, 0xbf, 0xff, 0xff, 0xff, 0x00}
+	pos := uint32(0x20000)
+
+	dataLen := uint32(len(data))
+	maskLen := uint32(len(addrMsk))
+
+	for (pos + maskLen) <= dataLen {
+		if MatchPattern(data, pos, addrPat, addrMsk) {
+			return true
+		}
+
+		pos += 2
+	}
+	return false
 }
 
 func extractT8SymbolData(sym *Symbol, data []byte) {
@@ -396,8 +461,21 @@ func DetermineSecondaryOffset(data []byte) int {
 
 // MatchPattern is a placeholder function for pattern matching logic.
 func MatchPattern(data []byte, pos uint32, pattern []byte, mask []byte) bool {
-	// Implement pattern matching logic here.
-	return false
+	found := false
+
+	maskLen := uint32(len(mask))
+	dataLen := uint32(len(data))
+
+	if (pos + maskLen) <= dataLen {
+		found = true
+		for i := uint32(0); i < maskLen; i++ {
+			if (data[pos+i] & mask[i]) != (pattern[i] & mask[i]) {
+				return false
+			}
+		}
+	}
+
+	return found
 }
 
 /*

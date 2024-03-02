@@ -70,6 +70,11 @@ func loadT8Symbols(fileBytes []byte, cb func(string)) (*Collection, error) {
 	syms := NewCollection(symbols...)
 
 	openBin := determineBinaryOpenness(fileBytes, syms)
+	if openBin {
+		cb("Open binary detected")
+	} else {
+		cb("Closed binary detected")
+	}
 
 	for _, sym := range symbols {
 		//origAddress := sym.Address

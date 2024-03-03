@@ -65,7 +65,7 @@ var axisT8 = AxisInformation{
 	"IgnAbsCal.fi_lowOctanMAP": Axis{
 		"IgnAbsCal.m_AirNormXSP",
 		"IgnAbsCal.n_EngNormYSP",
-		"IgnAbsCal.fi_highOctanMAP",
+		"IgnAbsCal.fi_lowOctanMAP",
 		"",
 		"",
 		"",

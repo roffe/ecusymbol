@@ -66,15 +66,14 @@ func (s *Symbol) SetData(data []byte) error {
 }
 
 func (s *Symbol) Read(r io.Reader) error {
-	symbolData := make([]byte, s.Length)
-	n, err := r.Read(symbolData)
+	s.data = make([]byte, s.Length)
+	n, err := r.Read(s.data)
 	if err != nil {
 		return err
 	}
 	if n != int(s.Length) {
 		return fmt.Errorf("Symbol expected %d bytes, got %d", s.Length, n)
 	}
-	s.data = symbolData
 	return nil
 }
 

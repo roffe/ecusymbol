@@ -24,6 +24,7 @@ type Symbol struct {
 	ExtendedType     uint8
 	Correctionfactor float64
 	Unit             string `json:",omitempty"`
+	Skip             bool   `json:"-"`
 }
 
 func Load(filename string, printFunc func(string)) (ECUType, SymbolCollection, error) {

@@ -73,7 +73,7 @@ func (s *Symbol) Read(r io.Reader) error {
 		return err
 	}
 	if n != int(s.Length) {
-		return fmt.Errorf("Symbol expected %d bytes, got %d", s.Length, n)
+		return fmt.Errorf("symbol expected %d bytes, got %d", s.Length, n)
 	}
 	return nil
 }

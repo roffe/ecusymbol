@@ -140,8 +140,8 @@ var axisT7 = AxisInformation{
 		"mg/c",
 		"rpm",
 		"kPa",
-		"",
-		"",
+		"MAF.m_AirInlet",
+		"ActualIn.n_Engine",
 	},
 	"AirCompCal.PresTab": Axis{
 		"",
@@ -290,8 +290,8 @@ var axisT7 = AxisInformation{
 		"mg/c",
 		"rpm",
 		"Fuel correction factor",
-		"",
-		"",
+		"MAF.m_AirInlet",
+		"ActualIn.n_Engine",
 	},
 	"BFuelCal.StartMap": Axis{
 		"BFuelCal.AirXSP",
@@ -300,8 +300,8 @@ var axisT7 = AxisInformation{
 		"mg/c",
 		"rpm",
 		"Fuel correction factor",
-		"",
-		"",
+		"MAF.m_AirInlet",
+		"ActualIn.n_Engine",
 	},
 	"BFuelCal.WWCompAlphaTab": Axis{
 		"",
@@ -1730,8 +1730,8 @@ var axisT7 = AxisInformation{
 		"mg/c",
 		"rpm",
 		"° BDTC",
-		"",
-		"",
+		"MAF.m_AirInlet",
+		"ActualIn.n_Engine",
 	},
 	"IgnIdleCal.fi_IdleMap": Axis{
 		"IgnIdleCal.m_AirXSP",
@@ -1740,8 +1740,8 @@ var axisT7 = AxisInformation{
 		"mg/c",
 		"rpm",
 		"° BDTC",
-		"",
-		"",
+		"MAF.m_AirInlet",
+		"ActualIn.n_Engine",
 	},
 	"IgnIdleCal.fi_MinTab": Axis{
 		"",
@@ -1890,8 +1890,8 @@ var axisT7 = AxisInformation{
 		"mg/c",
 		"rpm",
 		"° BDTC",
-		"",
-		"",
+		"MAF.m_AirInlet",
+		"ActualIn.n_Engine",
 	},
 	"IgnNormCal2.Map": Axis{
 		"IgnNormCal.m_AirXSP",
@@ -1930,7 +1930,7 @@ var axisT7 = AxisInformation{
 		"rpm",
 		"°C",
 		"°",
-		"ActualIn.n_Engine",
+		"",
 		"ActualIn.T_AirInlet",
 	},
 	"IgnTempCal.AirMap": Axis{
@@ -3011,7 +3011,7 @@ var axisT7 = AxisInformation{
 		"°C",
 		"z-axis",
 		"",
-		"",
+		"ActualIn.T_Engine",
 	},
 	"StartCal.EnrFacTab": Axis{
 		"",
@@ -3021,7 +3021,7 @@ var axisT7 = AxisInformation{
 		"°C",
 		"z-axis",
 		"",
-		"",
+		"ActualIn.n_Engine",
 	},
 	"StartCal.HighAltFacMap": Axis{
 		"StartCal.T_EngineSP",
@@ -3151,7 +3151,7 @@ var axisT7 = AxisInformation{
 		"°C",
 		"z-axis",
 		"",
-		"",
+		"ActualIn.T_Engine",
 	},
 	"TCompCal.EnrFacMap": Axis{
 		"TCompCal.EnrFacXSP",
@@ -3171,7 +3171,7 @@ var axisT7 = AxisInformation{
 		"°C",
 		"z-axis",
 		"",
-		"",
+		"ActualIn.T_Engine",
 	},
 	"TempLimPosCal.Limit": Axis{
 		"",

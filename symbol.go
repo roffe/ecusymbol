@@ -233,6 +233,45 @@ func (s *Symbol) Float64() float64 {
 	}
 }
 
+func (s *Symbol) Int() int {
+	switch {
+	case s.Length == 1:
+		if len(s.data) != 1 {
+			return -1
+		}
+		if s.Type&SIGNED != 0 {
+			return int(s.Int8())
+		}
+		return int(s.Uint8())
+	case s.Length == 2:
+		if len(s.data) != 2 {
+			return -1
+		}
+		if s.Type&SIGNED != 0 {
+			return int(s.Int16())
+		}
+		return int(s.Uint16())
+	case s.Length == 4:
+		if len(s.data) != 4 {
+			return -1
+		}
+		if s.Type&SIGNED != 0 {
+			return int(s.Int32())
+		}
+		return int(s.Uint32())
+	case s.Length == 8:
+		if len(s.data) != 8 {
+			return -1
+		}
+		if s.Type&SIGNED != 0 {
+			return int(s.Int64())
+		}
+		return int(s.Uint64())
+	default:
+		return 0.0
+	}
+}
+
 func (s *Symbol) BytesToInts(data []byte) []int {
 	signed := s.Type&SIGNED == SIGNED
 	char := s.Type&CHAR == CHAR

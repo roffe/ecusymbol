@@ -41,5 +41,5 @@ func ExpandCompressedSymbolNames(in []byte) ([]string, error) {
 		return nil, fmt.Errorf("decoded data size missmatch: %d != %d", returnedSize, expandedFileSize)
 	}
 
-	return strings.Split(strings.TrimSuffix(string(out), "\r\n"), "\r\n"), nil
+	return strings.Split(string(out), "\r\n"), nil
 }

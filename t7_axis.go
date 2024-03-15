@@ -530,8 +530,8 @@ var axisT7 = AxisInformation{
 		"° ignition retard (Ioff)",
 		"rpm",
 		"mg/c",
-		"",
-		"",
+		"IgnProt.fi_Offset",
+		"ActualIn.n_Engine",
 	},
 	"CatDiagCal.HiMapOx1CycleTime": Axis{
 		"CatDiagCal.LoadTab",

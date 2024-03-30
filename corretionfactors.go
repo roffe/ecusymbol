@@ -57,6 +57,7 @@ var correctionFactors = map[string]float64{
 	"MyrtilosAdap.WBLambda_FeedbackMap": 0.001,
 	"MyrtilosAdap.WBLambda_FFMap":       1,
 	"Myrtilos.InjectorDutyCycle":        1,
+	"PedalMapCal.X_PedalMap":            0.1,
 }
 
 func GetCorrectionfactor(name string) float64 {

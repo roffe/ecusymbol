@@ -2760,8 +2760,8 @@ var axisT7 = AxisInformation{
 		"rpm",
 		"% tps",
 		"mg/c",
-		"",
-		"",
+		"ActualIn.n_Engine",
+		"Out.X_AccPedal",
 	},
 	"PedalMapCal.X_AutFacTab": Axis{
 		"",

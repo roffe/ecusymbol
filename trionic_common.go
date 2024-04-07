@@ -43,3 +43,18 @@ func ExpandCompressedSymbolNames(in []byte) ([]string, error) {
 
 	return strings.Split(string(out), "\r\n"), nil
 }
+
+func CString(data []byte) string {
+	n := -1
+	for i, v := range data {
+		if v == 0 {
+			n = i
+			break
+		}
+	}
+	// If there was no null byte, convert the whole slice.
+	if n == -1 {
+		n = len(data)
+	}
+	return string(data[:n])
+}

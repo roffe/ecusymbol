@@ -41,6 +41,9 @@ func Load(filename string, printFunc func(string)) (ECUType, SymbolCollection, e
 	}
 
 	switch ecuType {
+	case ECU_T5:
+		sym, err := NewT5File(data)
+		return ECU_T5, sym, err
 	case ECU_T7:
 		sym, err := NewT7File(data,
 			WithAutoFixFooter(),
@@ -116,7 +119,7 @@ func (s *Symbol) Bytes() []byte {
 }
 
 func (s *Symbol) String() string {
-	return fmt.Sprintf("%s #%d @%X $%X type: %02X len: %d", s.Name, s.Number, s.Address, s.SramOffset, s.Type, s.Length)
+	return fmt.Sprintf("%s #%d @%08X $%06X type: %02X len: %d", s.Name, s.Number, s.Address, s.SramOffset, s.Type, s.Length)
 }
 
 func (s *Symbol) CString() string {
@@ -135,7 +138,6 @@ func (s *Symbol) CString() string {
 }
 
 func (s *Symbol) StringValue() string {
-	// return toValueString(s.Float64(), s.Correctionfactor)
 	var precission int
 	switch s.Correctionfactor {
 	case 0.1:

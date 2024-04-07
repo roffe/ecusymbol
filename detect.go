@@ -12,6 +12,7 @@ const (
 )
 
 var ecuMAP = map[ECUType]func(file *os.File, size int64) error{
+	ECU_T5: IsTrionic5File,
 	ECU_T7: IsTrionic7File,
 	ECU_T8: IsTrionic8File,
 }
@@ -46,18 +47,25 @@ func DetectType(filename string) (ECUType, error) {
 	return ECU_UNKNOWN, fmt.Errorf("unknown file type")
 }
 
-func IsTrionic8File(file *os.File, size int64) error {
-	if size != T8Length {
+func IsTrionic5File(file *os.File, size int64) error {
+	if size != LengthT55 {
 		return ErrInvalidLength
 	}
-	return fileHasPrefix(file, []byte{0x00, 0x10, 0x0C, 0x00})
+	return fileHasPrefix(file, T5MagicBytes)
 }
 
 func IsTrionic7File(file *os.File, size int64) error {
 	if size != T7Length {
 		return ErrInvalidLength
 	}
-	return fileHasPrefix(file, []byte{0xFF, 0xFF, 0xEF, 0xFC, 0x00})
+	return fileHasPrefix(file, T7MagicBytes)
+}
+
+func IsTrionic8File(file *os.File, size int64) error {
+	if size != T8Length {
+		return ErrInvalidLength
+	}
+	return fileHasPrefix(file, T8MagicBytes)
 }
 
 func fileHasPrefix(file *os.File, prefix []byte) error {

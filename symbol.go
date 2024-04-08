@@ -42,12 +42,15 @@ func Load(filename string, printFunc func(string)) (ECUType, SymbolCollection, e
 
 	switch ecuType {
 	case ECU_T5:
-		sym, err := NewT5File(data)
+		sym, err := NewT5File(
+			data,
+			WithT5PrintFunc(func(str string, v ...any) { printFunc(fmt.Sprintf(str, v...)) }),
+		)
 		return ECU_T5, sym, err
 	case ECU_T7:
 		sym, err := NewT7File(data,
-			WithAutoFixFooter(),
-			WithPrintFunc(func(str string, v ...any) { printFunc(fmt.Sprintf(str, v...)) }),
+			WithT7AutoFixFooter(),
+			WithT7PrintFunc(func(str string, v ...any) { printFunc(fmt.Sprintf(str, v...)) }),
 		)
 		return ECU_T7, sym, err
 	case ECU_T8:

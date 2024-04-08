@@ -3,6 +3,7 @@ package symbol
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"log"
 )
@@ -18,10 +19,18 @@ type T5File struct {
 	data                      []byte
 	numberOfSymbols           int
 	m_symboltablestartaddress int
+	printFunc                 func(string, ...any)
 	*Collection
 }
 
 type T5FileOpt func(*T5File) error
+
+func WithT5PrintFunc(f func(string, ...any)) T5FileOpt {
+	return func(t5 *T5File) error {
+		t5.printFunc = f
+		return nil
+	}
+}
 
 func NewT5File(data []byte, opts ...T5FileOpt) (*T5File, error) {
 	if len(data) != LengthT55 {
@@ -35,6 +44,7 @@ func NewT5File(data []byte, opts ...T5FileOpt) (*T5File, error) {
 	t5 := &T5File{
 		data:       data,
 		Collection: NewCollection(),
+		printFunc:  log.Printf,
 	}
 
 	for _, opt := range opts {
@@ -54,6 +64,9 @@ func (t5 *T5File) init() (*T5File, error) {
 }
 
 func (t5 *T5File) parseData() error {
+
+	var symbols []*Symbol
+
 	var state int = -10
 	var charcount int
 	buff := bytes.NewBuffer(nil)
@@ -114,12 +127,16 @@ outer:
 				if b == 0x0d && t5.data[t+1] == 0x0a { // start of next symbol
 					state = 1
 					address := t - charcount
-					if err := t5.addtosymbolcollection(buff.Bytes()); err != nil {
-						return err
-					}
 					if t5.m_symboltablestartaddress == 0 && t > 0xA000 {
 						t5.m_symboltablestartaddress = address
 					}
+					sym, err := t5.tosymbol(buff.Bytes())
+					if err != nil {
+						return err
+					}
+					t5.numberOfSymbols++
+					symbols = append(symbols, sym)
+
 					buff.Reset()
 				} else {
 					if err := buff.WriteByte(b); err != nil {
@@ -133,12 +150,15 @@ outer:
 					t5.m_symboltablestartaddress = address
 				}
 				if bytes.HasPrefix(buff.Bytes(), []byte("END$")) {
-					log.Println("END$ found")
+					//					log.Println("END$ found")
 					break outer
 				} else {
-					if err := t5.addtosymbolcollection(buff.Bytes()); err != nil {
+					sym, err := t5.tosymbol(buff.Bytes())
+					if err != nil {
 						return err
 					}
+					t5.numberOfSymbols++
+					symbols = append(symbols, sym)
 					buff.Reset()
 					state = 0
 				}
@@ -147,26 +167,34 @@ outer:
 	}
 	buff.Reset()
 
-	if err := t5.readAddressLookupTable(); err != nil {
+	alh, err := t5.readAddressLookupTable(len(symbols))
+	if err != nil {
 		return err
 	}
-
-	for _, sym := range t5.Symbols() {
+	for _, sym := range symbols {
+		if alt, ok := alh[sym.SramOffset]; ok {
+			sym.Address = alt.FlashAddress
+		}
 		if sym.Address == 0 {
 			continue
 		}
-		
-
-
+		//		log.Println(sym.SramOffset, sym.Address, sym.Length, sym.Name)
 		sym.data = make([]byte, sym.Length)
-		log.Println(sym.String())
 		binary.Read(bytes.NewReader(t5.data[sym.Address:sym.Address+uint32(sym.Length)]), binary.BigEndian, sym.data)
 	}
+
+	t5.Add(symbols...)
+
+	t5.printFunc("Loaded %d symbols from binary", len(symbols))
 
 	return nil
 }
 
-func (t5 *T5File) readAddressLookupTable() error {
+type addressRecord struct {
+	FlashAddress uint32
+}
+
+func (t5 *T5File) readAddressLookupTable(numberOfSymbols int) (map[uint32]addressRecord, error) {
 	var readstate int = -30
 	var lookuptablestartaddress int
 	for t, b := range t5.data {
@@ -367,13 +395,14 @@ func (t5 *T5File) readAddressLookupTable() error {
 			}
 		}
 	}
-
 	binPos := lookuptablestartaddress + 2
 	br := bytes.NewReader(t5.data)
 	if _, err := br.Seek(int64(binPos), io.SeekStart); err != nil {
-		return err
+		return nil, err
 	}
-	for sc := 0; sc < t5.numberOfSymbols; sc++ {
+
+	addressRecords := make(map[uint32]addressRecord)
+	for sc := 0; sc < numberOfSymbols; sc++ {
 		if binPos >= t5.m_symboltablestartaddress {
 			log.Println("pos is greater than symboltablestartaddress")
 			break
@@ -381,7 +410,7 @@ func (t5 *T5File) readAddressLookupTable() error {
 
 		var flashAddress uint32
 		if err := binary.Read(br, binary.BigEndian, &flashAddress); err != nil {
-			return err
+			return nil, err
 		}
 		binPos += 4
 		//log.Printf("flashAddress: 0x%08X\n", flashAddress)
@@ -389,14 +418,14 @@ func (t5 *T5File) readAddressLookupTable() error {
 		// 8x dummy bytes
 		dummy := make([]byte, 8)
 		if err := binary.Read(br, binary.BigEndian, dummy); err != nil {
-			return err
+			return nil, err
 		}
 		//		log.Printf("dummy: %X len: %X other: %X", dummy[:2], dummy[2:4], dummy[4:])
 		binPos += 8
 
 		var sramAddress uint16
 		if err := binary.Read(br, binary.BigEndian, &sramAddress); err != nil {
-			return err
+			return nil, err
 		}
 		binPos += 2
 		//log.Printf("sramAddress: %06X\n", sramAddress)
@@ -408,7 +437,7 @@ func (t5 *T5File) readAddressLookupTable() error {
 		for tel < 16 && !found {
 			tb, err := br.ReadByte()
 			if err != nil {
-				return err
+				return nil, err
 			}
 			binPos++
 
@@ -421,7 +450,6 @@ func (t5 *T5File) readAddressLookupTable() error {
 			case 1:
 				if tb == 0x79 {
 					found = true
-					//		fmt.Println()
 					break outer
 				} else {
 					tstate = 0
@@ -429,25 +457,17 @@ func (t5 *T5File) readAddressLookupTable() error {
 			}
 			tel++
 		}
-
-		ttt := t5.data[binPos-tel : binPos]
-		dd := binary.BigEndian.Uint32(t5.data[binPos-tel : binPos+4])
-		log.Printf("ttt: %X : %d | 0x%08X", ttt, len(ttt), dd)
-
 		if !found {
 			break
 		}
-		for _, sym := range t5.Symbols() {
-			if sym.SramOffset == uint32(sramAddress) {
-				sym.Address = flashAddress - uint32(len(t5.data))
-				break
-			}
+		addressRecords[uint32(sramAddress)] = addressRecord{
+			FlashAddress: flashAddress - uint32(len(t5.data)),
 		}
 	}
-	return nil
+	return addressRecords, nil
 }
 
-func (t5 *T5File) addtosymbolcollection(data []byte) error {
+func (t5 *T5File) tosymbol(data []byte) (*Symbol, error) {
 	var invalidCharCount int
 	for _, b := range data[4:] {
 		if b < 10 {
@@ -456,16 +476,19 @@ func (t5 *T5File) addtosymbolcollection(data []byte) error {
 	}
 	if invalidCharCount > 2 {
 		//		log.Println("Too many invalid chars")
-		return nil
+		return nil, fmt.Errorf("too many invalid chars")
 	}
-	sym := &Symbol{
-		Number:     t5.numberOfSymbols,
-		SramOffset: uint32(binary.BigEndian.Uint16(data[0:2])),
-		Length:     binary.BigEndian.Uint16(data[2:4]),
-		Name:       CString(data[4:]),
-	}
+
+	name := CString(data[4:])
+
 	//	log.Println(sym.String())
-	t5.Add(sym)
-	t5.numberOfSymbols++
-	return nil
+	return &Symbol{
+		Number:           t5.numberOfSymbols,
+		SramOffset:       uint32(binary.BigEndian.Uint16(data[0:2])),
+		Length:           binary.BigEndian.Uint16(data[2:4]),
+		Name:             name,
+		Type:             T5Types[name],
+		Correctionfactor: GetCorrectionfactor(name),
+	}, nil
+
 }

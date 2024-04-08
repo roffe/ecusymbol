@@ -61,14 +61,14 @@ type T7File struct {
 
 type T7FileOpt func(*T7File) error
 
-func WithAutoFixFooter() T7FileOpt {
+func WithT7AutoFixFooter() T7FileOpt {
 	return func(t7 *T7File) error {
 		t7.autoFixFooter = true
 		return nil
 	}
 }
 
-func WithPrintFunc(f func(string, ...any)) T7FileOpt {
+func WithT7PrintFunc(f func(string, ...any)) T7FileOpt {
 	return func(t7 *T7File) error {
 		t7.printFunc = f
 		return nil

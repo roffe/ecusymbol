@@ -3,9 +3,12 @@ package symbol
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"log"
+	"os"
 )
 
 const (
@@ -60,7 +63,130 @@ func (t5 *T5File) init() (*T5File, error) {
 	if err := t5.parseData(); err != nil {
 		return nil, err
 	}
-	return t5, nil
+	return t5, t5.VerifyChecksum()
+}
+
+func (t5 *T5File) calculateChecksum() (uint32, error) {
+	indexOfFirstMarking, err := t5.getIndexOfFirstMarking()
+	if err != nil {
+		return 0, err
+	}
+	if indexOfFirstMarking <= 0 {
+		return 0, ErrEndOfSymbolTableNotFound
+	}
+	var checksum uint32
+	for i := 0; i < indexOfFirstMarking+4; i++ {
+		checksum += uint32(t5.data[i])
+	}
+	return checksum, nil
+}
+
+func (t5 *T5File) getIndexOfFirstMarking() (int, error) {
+	indexOfFirstMarking, err := readEndMarker(t5.data, 0xFE)
+	if err != nil {
+		return -1, err
+	}
+	indexOfFirstMarking -= 3 // Adjust for the 3 bytes of the end marker
+
+	if indexOfFirstMarking <= 0 {
+		return -1, ErrEndOfSymbolTableNotFound
+	}
+	return indexOfFirstMarking, nil
+}
+
+func (t5 *T5File) UpdateChecksum() error {
+	dataLength := len(t5.data)
+	if dataLength < 5 { // Minimum length: end marker (1 byte), checksum (4 bytes)
+		return ErrInvalidLength
+	}
+
+	checksum, err := t5.calculateChecksum()
+	if err != nil {
+		return err
+	}
+
+	binary.BigEndian.PutUint32(t5.data[dataLength-4:], checksum)
+	log.Printf("Checksum updated to %X", t5.data[dataLength-4:])
+	return nil
+}
+
+// Read the stored checksum from the last 4 bytes
+func (t5 *T5File) getChecksum() uint32 {
+	dataLength := len(t5.data)
+	return binary.BigEndian.Uint32(t5.data[dataLength-4:])
+}
+
+func (t5 *T5File) VerifyChecksum() error {
+	dataLength := len(t5.data)
+	if dataLength < 5 { // Minimum length: end marker (1 byte), checksum (4 bytes)
+		return ErrInvalidLength
+	}
+	checksum, err := t5.calculateChecksum()
+	if err != nil {
+		return err
+	}
+	storedChecksum := t5.getChecksum()
+	if checksum != storedChecksum {
+		t5.printFunc("checksum: %X storedChecksum: %X\n", checksum, storedChecksum)
+		return ErrChecksumMismatch
+	}
+	t5.printFunc("Checksum %X OK", checksum)
+	return nil
+}
+
+func (t5 *T5File) Save(filename string) error {
+	if err := t5.UpdateChecksum(); err != nil {
+		return err
+	}
+	return os.WriteFile(filename, t5.data, 0644)
+}
+
+func readEndMarker(data []byte, marker byte) (int, error) {
+	if len(data) == 0 {
+		return 0, errors.New("data slice is empty")
+	}
+
+	const dataSize = 0x40000
+	dataLength := len(data)
+	searchStart := dataLength - 0x100 // Start of the search area
+	if searchStart < 0 {
+		searchStart = 0 // Ensure searchStart is not negative
+	}
+
+	// Search for the marker
+	offset := -1
+	for i, b := range data[searchStart:] {
+		if b == byte(marker) {
+			offset = searchStart + i
+			//			log.Printf("offset: %X", offset)
+			break
+		}
+	}
+
+	if offset == -1 {
+		return 0, errors.New("marker not found")
+	}
+
+	// Calculate the result based on bytes preceding the marker, if enough bytes are available
+	if offset > 6 {
+		hexStr := "00"
+		for i := 1; i <= 6; i++ {
+			hexStr += string(data[offset-i])
+		}
+		result, err := hex.DecodeString(hexStr)
+		if err != nil {
+			return 0, fmt.Errorf("error decoding hex string: %w", err)
+		}
+		retval := int(int32(binary.BigEndian.Uint32(result)))
+		// Adjust retval based on the data size
+		if dataLength == dataSize {
+			retval -= dataSize
+		} else {
+			retval -= 0x60000
+		}
+		return retval, nil
+	}
+	return 0, errors.New("not enough data before marker for conversion")
 }
 
 func (t5 *T5File) parseData() error {
@@ -490,5 +616,4 @@ func (t5 *T5File) tosymbol(data []byte) (*Symbol, error) {
 		Type:             T5Types[name],
 		Correctionfactor: GetCorrectionfactor(name),
 	}, nil
-
 }

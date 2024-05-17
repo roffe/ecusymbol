@@ -3,6 +3,7 @@ package symbol
 import "errors"
 
 var (
+	ErrChecksumMismatch           = errors.New("checksum mismatch")
 	ErrSymbolTableNotFound        = errors.New("no symbol table found")
 	ErrInvalidSymbolTableHeader   = errors.New("invalid symbol table header")
 	ErrEndOfSymbolTableNotFound   = errors.New("end of symbol table not found")

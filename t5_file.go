@@ -40,9 +40,9 @@ func NewT5File(data []byte, opts ...T5FileOpt) (*T5File, error) {
 		return nil, ErrInvalidLength
 	}
 
-	if !bytes.HasPrefix(data, T5MagicBytes) {
-		return nil, ErrMagicBytesNotFound
-	}
+	//if !bytes.HasPrefix(data, T5MagicBytes) {
+	//	return nil, ErrMagicBytesNotFound
+	//}
 
 	t5 := &T5File{
 		data:       data,

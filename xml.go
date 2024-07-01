@@ -34,6 +34,7 @@ var xmlMap map[string][]byte = map[string][]byte{
 	"EU0AF01O": EU0AF01O_xml,
 	"EU0BF01O": EU0AF01O_xml,
 	"EU0CF01O": EU0AF01O_xml,
+	"EU06Z44O": EU0AF01O_xml,
 }
 
 func xml2map(name string) (map[int]string, error) {

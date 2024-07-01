@@ -51,7 +51,8 @@ func IsTrionic5File(file *os.File, size int64) error {
 	if size != LengthT55 {
 		return ErrInvalidLength
 	}
-	return fileHasPrefix(file, T5MagicBytes)
+	//return fileHasPrefix(file, T5MagicBytes)
+	return nil
 }
 
 func IsTrionic7File(file *os.File, size int64) error {

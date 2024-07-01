@@ -336,7 +336,7 @@ func readSymbolData(file []byte, s *Symbol, offset uint32) ([]byte, error) {
 
 func determineVersion(data []byte) (string, error) {
 	switch {
-	case bytes.Contains(data, []byte("EU0CF01O")):
+	case bytes.Contains(data, []byte("EU0CF01O")), bytes.Contains(data, []byte("EU06Z44O")), bytes.Contains(data, []byte("O44Z60UE")):
 		return "EU0CF01O", nil
 	case bytes.Contains(data, []byte("C10FA0UE")), bytes.Contains(data, []byte("EU0AF01C")), bytes.Contains(data, []byte("EU0BF01C")), bytes.Contains(data, []byte("EU0CF01C")):
 		return "EU0AF01C", nil

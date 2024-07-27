@@ -55,7 +55,7 @@ func Load(filename string, printFunc func(string)) (ECUType, SymbolCollection, e
 		return ECU_T7, sym, err
 	case ECU_T8:
 		sym, err := NewT8File(data,
-			WithAutoCorrect(),
+			WithT8AutoCorrectChecksum(),
 			WithT8PrintFunc(func(str string, v ...any) { printFunc(fmt.Sprintf(str, v...)) }),
 		)
 		return ECU_T8, sym, err

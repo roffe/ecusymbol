@@ -27,7 +27,7 @@ type T8File struct {
 
 type T8FileOpt func(*T8File) error
 
-func WithAutoCorrect() T8FileOpt {
+func WithT8AutoCorrectChecksum() T8FileOpt {
 	return func(t8 *T8File) error {
 		t8.autoCorrect = true
 		return nil

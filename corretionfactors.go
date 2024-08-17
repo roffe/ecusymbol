@@ -1,6 +1,7 @@
 package symbol
 
 var correctionFactors = map[string]float64{
+	"AdpFuelProt.MulFuelAdapt":     0.01,
 	"KnkSoundRedCal.fi_OffsMa":     0.1,
 	"IgnE85Cal.fi_AbsMap":          0.1,
 	"MAFCal.cd_ThrottleMap":        0.0009765625,

@@ -1969,7 +1969,7 @@ var axisT7 = AxisInformation{
 		"InjCorrCal.BattCorrTab",
 		"x-axis",
 		"V",
-		"z-axis",
+		"opening time μs",
 		"",
 		"",
 	},

@@ -1,14 +1,15 @@
 package symbol
 
 var correctionFactors = map[string]float64{
-	"AdpFuelProt.MulFuelAdapt":     0.01,
-	"KnkSoundRedCal.fi_OffsMa":     0.1,
-	"IgnE85Cal.fi_AbsMap":          0.1,
-	"MAFCal.cd_ThrottleMap":        0.0009765625,
-	"TrqMastCal.Trq_NominalMap":    0.1,
-	"TrqMastCal.Trq_MBTMAP":        0.1,
-	"AfterStCal.StartMAP":          0.0009765625, // 1/1024
-	"KnkFuelCal.EnrichmentMap":     0.0009765625, // 1/1024
+	"AdpFuelProt.MulFuelAdapt":  0.01,
+	"KnkSoundRedCal.fi_OffsMa":  0.1,
+	"IgnE85Cal.fi_AbsMap":       0.1,
+	"MAFCal.cd_ThrottleMap":     0.0009765625,
+	"TrqMastCal.Trq_NominalMap": 0.1,
+	"TrqMastCal.Trq_MBTMAP":     0.1,
+	"AfterStCal.StartMAP":       0.0009765625, // 1/1024
+	// "KnkFuelCal.EnrichmentMap":     0.0009765625, // 1/1024 // T8
+	"KnkFuelCal.EnrichmentMap":     0.001,        // T7
 	"AfterStCal.HotSoakMAP":        0.0009765625, // 1/1024
 	"MAFCal.NormAdjustFacMap":      0.0078125,    // 1/128
 	"BFuelCal.LambdaOneFacMap":     0.0078125,    // 1/128
@@ -201,7 +202,7 @@ func GetCorrectionfactor(name string) float64 {
 	return 1
 }
 
-/*
+/* t8 values
    if (symbolname == "KnkSoundRedCal.fi_OffsMa") returnvalue = 0.1,
    else if (symbolname == "IgnE85Cal.fi_AbsMap") returnvalue = 0.1,
    else if (symbolname == "MAFCal.cd_ThrottleMap") returnvalue = 0.0009765625,

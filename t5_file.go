@@ -306,7 +306,9 @@ outer:
 		}
 		//		log.Println(sym.SramOffset, sym.Address, sym.Length, sym.Name)
 		sym.data = make([]byte, sym.Length)
-		binary.Read(bytes.NewReader(t5.data[sym.Address:sym.Address+uint32(sym.Length)]), binary.BigEndian, sym.data)
+		if err := binary.Read(bytes.NewReader(t5.data[sym.Address:sym.Address+uint32(sym.Length)]), binary.BigEndian, sym.data); err != nil {
+			return err
+		}
 	}
 
 	t5.Add(symbols...)

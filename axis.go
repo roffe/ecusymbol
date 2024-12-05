@@ -24,6 +24,7 @@ func (a *Axis) String() string {
 type AxisCollection map[ECUType]Axis
 
 var axisTranslator = map[ECUType]AxisInformation{
+	ECU_T5: axisT5,
 	ECU_T7: axisT7,
 	ECU_T8: axisT8,
 }

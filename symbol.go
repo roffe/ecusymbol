@@ -145,7 +145,7 @@ func (s *Symbol) StringValue() string {
 	switch s.Correctionfactor {
 	case 0.1:
 		precission = 1
-	case 0.01, 0.0078125, 0.0009765625:
+	case 0.01, 0.0078125, 0.0009765625, 0.00390625, 0.004:
 		precission = 2
 	case 0.001:
 		precission = 3
@@ -194,12 +194,49 @@ func (s *Symbol) Int64() int64 {
 func (s *Symbol) Float64s() []float64 {
 	var floats []float64
 	for _, v := range s.Ints() {
-		floats = append(floats, float64(v)*s.Correctionfactor)
+		floats = append(floats, (float64(v)*s.Correctionfactor)+T5Offsets[s.Name])
 	}
 	return floats
 }
 
 func (s *Symbol) Float64() float64 {
+	if len(s.data) != int(s.Length) {
+		return -1
+	}
+
+	var val int64
+	switch s.Length {
+	case 1:
+		if s.Type&SIGNED != 0 {
+			val = int64(int8(s.data[0]))
+		} else {
+			val = int64(s.data[0])
+		}
+	case 2:
+		if s.Type&SIGNED != 0 {
+			val = int64(int16(binary.BigEndian.Uint16(s.data)))
+		} else {
+			val = int64(binary.BigEndian.Uint16(s.data))
+		}
+	case 4:
+		if s.Type&SIGNED != 0 {
+			val = int64(int32(binary.BigEndian.Uint32(s.data)))
+		} else {
+			val = int64(binary.BigEndian.Uint32(s.data))
+		}
+	case 8:
+		if s.Type&SIGNED != 0 {
+			val = int64(binary.BigEndian.Uint64(s.data))
+		} else {
+			val = int64(binary.BigEndian.Uint64(s.data))
+		}
+	default:
+		return 0.0
+	}
+	return float64(val) * s.Correctionfactor
+}
+
+func (s *Symbol) Float642() float64 {
 	switch {
 	case s.Length == 1:
 		if len(s.data) != 1 {
@@ -431,7 +468,7 @@ func (s *Symbol) Int8s() []int {
 func (s *Symbol) Uint8s() []int {
 	values := make([]int, 0, len(s.data))
 	for _, b := range s.data {
-		values = append(values, int(b))
+		values = append(values, int(uint8(b)))
 	}
 	return values
 }

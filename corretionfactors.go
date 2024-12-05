@@ -19,6 +19,8 @@ var correctionFactors = map[string]float64{
 	"FFFuelCal.KnkEnrichmentMAP":   0.0078125,    // 1/128
 	"FFFuelCal.TempEnrichFacMAP":   0.0078125,    // 1/128
 
+	"E85.X_EthAct_Tech2": 0.1,
+
 	"ActualIn.p_AirBefThrottle":         0.001,
 	"ActualIn.p_AirInlet":               0.001,
 	"AirCompCal.PressMap":               0.001,
@@ -99,6 +101,7 @@ var correctionFactors = map[string]float64{
 	"Fload_tab!":              0.001953125, // 1/51,
 	"Fuel_knock_mat!":         0.00390625,  // 1/25,
 	"Fuel_map_xaxis!":         0.01,
+	"Fuel_map_yaxis!":         10,
 	"Gear_st!":                0.1, // 1/ ((256*256) / 260,
 	"Grund_last!":             0.01,
 	"Hot_start_fak!":          0.0009765625, // 128/25,
@@ -123,8 +126,8 @@ var correctionFactors = map[string]float64{
 	"Ign_map_7_x_axis!":       0.01,
 	"Ign_map_7!":              0.1,
 	"Ign_map_8!":              0.1,
-	"Inj_map_0!":              1,          // 0.00390625, // 1/256 LOLA specifi,
-	"Insp_mat!":               0.00390625, // 1/25,
+	"Inj_map_0!":              1,          // 0.00390625, // 1/256 LOLA specifi
+	"Insp_mat!":               0.00390625, // 1/256
 	"Iv_min_load!":            0.01,
 	"Kadapt_load_high!":       0.01,
 	"Kadapt_load_low!":        0.01,

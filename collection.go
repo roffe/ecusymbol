@@ -134,8 +134,12 @@ func (c *Collection) GetXYZ(xAxis, yAxis, zAxis string) ([]int, []int, []int, fl
 	if symy == nil {
 		if symx == nil {
 			yOut = make([]int, len(zOut))
-			for i := range yOut {
-				yOut[i] = i
+			if symz.Name == "Batt_korr_tab!" {
+				yOut = []int{15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5}
+			} else {
+				for i := range yOut {
+					yOut[i] = i
+				}
 			}
 		} else {
 			yOut = []int{0}

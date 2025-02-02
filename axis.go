@@ -41,12 +41,14 @@ func getAxis(ecu ECUType, name string) Axis {
 func GetInfo(ecu ECUType, name string) Axis {
 	axis := getAxis(ecu, name)
 
-	if axis.XFrom == "" {
-		axis.XFrom = "MAF.m_AirInlet"
-	}
-	if axis.YFrom == "" {
-		axis.YFrom = "ActualIn.n_Engine"
-	}
+	/*
+		if axis.XFrom == "" {
+			axis.XFrom = "MAF.m_AirInlet"
+		}
+		if axis.YFrom == "" {
+			axis.YFrom = "ActualIn.n_Engine"
+		}
+	*/
 
 	if axis.X == "" && axis.Y == "" && axis.Z == "" {
 		return Axis{

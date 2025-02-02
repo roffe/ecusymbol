@@ -97,7 +97,7 @@ func (c *Collection) Version() string {
 }
 
 func (c *Collection) GetXYZ(xAxis, yAxis, zAxis string) ([]int, []int, []int, float64, float64, float64, error) {
-	log.Printf("GetXYZ(%s, %s, %s)", xAxis, yAxis, zAxis)
+	//log.Printf("GetXYZ(%s, %s, %s)", xAxis, yAxis, zAxis)
 	symx, symy, symz := c.GetByName(xAxis), c.GetByName(yAxis), c.GetByName(zAxis)
 	if symz == nil {
 		return nil, nil, nil, 0, 0, 0, fmt.Errorf("%s not found", zAxis)

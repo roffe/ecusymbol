@@ -23,3 +23,16 @@ func (e ECUType) String() string {
 		return "Unknown"
 	}
 }
+
+func ECUTypeFromString(s string) ECUType {
+	switch s {
+	case "T5":
+		return ECU_T5
+	case "T7":
+		return ECU_T7
+	case "T8":
+		return ECU_T8
+	default:
+		return ECU_UNKNOWN
+	}
+}

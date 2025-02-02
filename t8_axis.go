@@ -242,4 +242,14 @@ var axisT8 = AxisInformation{
 		"",
 		"",
 	},
+	"TrqMastCal.X_AccPedalMAP": Axis{
+		X:            "TrqMastCal.n_EngineXSP",
+		Y:            "TrqMastCal.Trq_PedYSP",
+		Z:            "TrqMastCal.X_AccPedalMAP",
+		XDescription: "Nm",
+		YDescription: "rpm",
+		ZDescription: "%",
+		XFrom:        "ActualIn.n_Engine",
+		YFrom:        "Out.X_AccPos",
+	},
 }

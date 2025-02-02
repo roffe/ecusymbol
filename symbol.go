@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -194,6 +195,7 @@ func (s *Symbol) Int64() int64 {
 func (s *Symbol) Float64s() []float64 {
 	var floats []float64
 	for _, v := range s.Ints() {
+		//log.Printf("%f", T5Offsets[s.Name])
 		floats = append(floats, (float64(v)*s.Correctionfactor)+T5Offsets[s.Name])
 	}
 	return floats
@@ -314,6 +316,14 @@ func (s *Symbol) Int() int {
 	}
 }
 
+func (s *Symbol) BytesToFloat64s(data []byte) []float64 {
+	var floats []float64
+	for _, v := range s.BytesToInts(data) {
+		floats = append(floats, (float64(v)*s.Correctionfactor)+T5Offsets[s.Name])
+	}
+	return floats
+}
+
 func (s *Symbol) BytesToInts(data []byte) []int {
 	signed := s.Type&SIGNED == SIGNED
 	char := s.Type&CHAR == CHAR
@@ -405,6 +415,12 @@ func (s *Symbol) EncodeInt(input int) []byte {
 	}
 }
 
+func (s *Symbol) EncodeFloat64(v float64) []byte {
+	newValue := int(math.Round((v - T5Offsets[s.Name]) / s.Correctionfactor))
+	//log.Printf("(%f - %f) / %f = %d", v, T5Offsets[s.Name], s.Correctionfactor, newValue)
+	return s.EncodeInt(newValue)
+}
+
 func (s *Symbol) EncodeInts(input []int) []byte {
 	//signed := s.Type&SIGNED == SIGNED
 	//konst := s.Type&KONST == KONST
@@ -422,6 +438,14 @@ func (s *Symbol) EncodeInts(input []int) []byte {
 		default:
 			buf.Write([]byte{byte(v >> 8), byte(v)})
 		}
+	}
+	return buf.Bytes()
+}
+
+func (s *Symbol) EncodeFloat64s(input []float64) []byte {
+	buf := bytes.NewBuffer(nil)
+	for _, value := range input {
+		buf.Write(s.EncodeFloat64(value))
 	}
 	return buf.Bytes()
 }

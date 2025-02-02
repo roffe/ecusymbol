@@ -3,7 +3,6 @@ package symbol
 import (
 	"encoding/binary"
 	"fmt"
-	"log"
 
 	"github.com/roffe/ecusymbol/kmp"
 )
@@ -165,7 +164,6 @@ func loadT8Symbols(fileBytes []byte, cb func(string)) (*Collection, error) {
 func determineBinaryOpenness(data []byte, c SymbolCollection) bool {
 	const minRequiredLevel = 2
 	level := 0
-
 	if determineOpen_FromSymbolNames(c) {
 		level++
 	}
@@ -180,9 +178,7 @@ func determineBinaryOpenness(data []byte, c SymbolCollection) bool {
 	} else {
 		level++
 	}
-
-	log.Println("Binary openness level:", level)
-
+	//log.Println("Binary openness level:", level)
 	return level >= minRequiredLevel
 }
 

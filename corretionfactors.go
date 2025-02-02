@@ -28,6 +28,7 @@ var correctionFactors = map[string]float64{
 	"BFuelCal.StartMap":                 0.01,
 	"BoostCal.RegMap":                   0.1,
 	"DisplProt.LambdaScanner":           0.01,
+	"LambdaScan.LambdaScanner":          0.01,
 	"ECMStat.p_Diff":                    0.001,
 	"ECMStat.p_DiffThrot":               0.001,
 	"IgnAbsCal.fi_NormalMAP":            0.1,
@@ -196,6 +197,8 @@ var correctionFactors = map[string]float64{
 	"Tryck_vakt_tab!":                               0.01,
 	"Turbo_knock_press":                             0.01, // ba,
 	"Turbo_knock_tab":                               0.01,
+
+	"BstKnkCal.fi_offsetXSP": 0.1,
 }
 
 func GetCorrectionfactor(name string) float64 {
@@ -203,6 +206,23 @@ func GetCorrectionfactor(name string) float64 {
 		return val
 	}
 	return 1
+}
+
+func GetPrecision(corrFac float64) int {
+	precission := 0
+	switch corrFac {
+	case 0.1:
+		precission = 1
+	case 0.01, 0.00390625, 0.004:
+		precission = 2
+	case 0.001:
+		precission = 3
+	case 0.0009765625: // 1/1024
+		precission = 4
+	case 0.0078125: // 1/128
+		precission = 3
+	}
+	return precission
 }
 
 /* t8 values

@@ -300,14 +300,23 @@ outer:
 	for _, sym := range symbols {
 		if alt, ok := alh[sym.SramOffset]; ok {
 			sym.Address = alt.FlashAddress
+			alt.Used = true
+			alh[sym.SramOffset] = alt
 		}
 		if sym.Address == 0 {
+			//log.Println(sym.Name, "has no address")
 			continue
 		}
-		//		log.Println(sym.SramOffset, sym.Address, sym.Length, sym.Name)
+		//log.Printf("SRAM: %X, ADDR: %X, LEN: %d N: %s", sym.SramOffset, sym.Address, sym.Length, sym.Name)
 		sym.data = make([]byte, sym.Length)
 		if err := binary.Read(bytes.NewReader(t5.data[sym.Address:sym.Address+uint32(sym.Length)]), binary.BigEndian, sym.data); err != nil {
 			return err
+		}
+	}
+
+	for _, v := range alh {
+		if !v.Used {
+			log.Printf("Unused address: %X", v.FlashAddress)
 		}
 	}
 
@@ -320,6 +329,7 @@ outer:
 
 type addressRecord struct {
 	FlashAddress uint32
+	Used         bool
 }
 
 func (t5 *T5File) readAddressLookupTable(numberOfSymbols int) (map[uint32]addressRecord, error) {
@@ -541,6 +551,7 @@ func (t5 *T5File) readAddressLookupTable(numberOfSymbols int) (map[uint32]addres
 			return nil, err
 		}
 		binPos += 4
+
 		//log.Printf("flashAddress: 0x%08X\n", flashAddress)
 
 		// 8x dummy bytes
@@ -556,20 +567,21 @@ func (t5 *T5File) readAddressLookupTable(numberOfSymbols int) (map[uint32]addres
 			return nil, err
 		}
 		binPos += 2
-		//log.Printf("sramAddress: %06X\n", sramAddress)
 
+		addressRecords[uint32(sramAddress)] = addressRecord{
+			FlashAddress: flashAddress - uint32(len(t5.data)),
+		}
+
+		// Check if there is a nother symbol in the next 16 bytes
 		tel := 0
 		found := false
 		tstate := 0
-	outer:
 		for tel < 16 && !found {
 			tb, err := br.ReadByte()
 			if err != nil {
 				return nil, err
 			}
 			binPos++
-
-			//fmt.Printf("%02X ", tb)
 			switch tstate {
 			case 0:
 				if tb == 0x48 {
@@ -578,7 +590,6 @@ func (t5 *T5File) readAddressLookupTable(numberOfSymbols int) (map[uint32]addres
 			case 1:
 				if tb == 0x79 {
 					found = true
-					break outer
 				} else {
 					tstate = 0
 				}
@@ -588,9 +599,7 @@ func (t5 *T5File) readAddressLookupTable(numberOfSymbols int) (map[uint32]addres
 		if !found {
 			break
 		}
-		addressRecords[uint32(sramAddress)] = addressRecord{
-			FlashAddress: flashAddress - uint32(len(t5.data)),
-		}
+
 	}
 	return addressRecords, nil
 }
@@ -603,7 +612,7 @@ func (t5 *T5File) tosymbol(data []byte) (*Symbol, error) {
 		}
 	}
 	if invalidCharCount > 2 {
-		//		log.Println("Too many invalid chars")
+		log.Println("Too many invalid chars")
 		return nil, fmt.Errorf("too many invalid chars")
 	}
 

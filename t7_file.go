@@ -54,7 +54,7 @@ type T7File struct {
 
 	csumArea [16]T7ChecksumArea
 
-	printFunc func(string, ...any)
+	printFunc func(string)
 
 	*Collection // the symbol collection
 }
@@ -68,7 +68,7 @@ func WithT7AutoFixFooter() T7FileOpt {
 	}
 }
 
-func WithT7PrintFunc(f func(string, ...any)) T7FileOpt {
+func WithT7PrintFunc(f func(string)) T7FileOpt {
 	return func(t7 *T7File) error {
 		t7.printFunc = f
 		return nil
@@ -96,8 +96,8 @@ func NewT7File(data []byte, opts ...T7FileOpt) (*T7File, error) {
 		ecuHardwareNr:   "0000000",
 		lastModifiedBy:  []byte{0x42, 0xFB, 0xFA, 0xFF, 0xFF},
 		testserialnr:    "050225",
-		printFunc: func(format string, v ...any) {
-			log.Printf(format, v...)
+		printFunc: func(str string) {
+			log.Println(str)
 		},
 	}
 

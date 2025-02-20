@@ -45,19 +45,19 @@ func Load(filename string, printFunc func(string)) (ECUType, SymbolCollection, e
 	case ECU_T5:
 		sym, err := NewT5File(
 			data,
-			WithT5PrintFunc(func(str string, v ...any) { printFunc(fmt.Sprintf(str, v...)) }),
+			WithT5PrintFunc(printFunc),
 		)
 		return ECU_T5, sym, err
 	case ECU_T7:
 		sym, err := NewT7File(data,
 			WithT7AutoFixFooter(),
-			WithT7PrintFunc(func(str string, v ...any) { printFunc(fmt.Sprintf(str, v...)) }),
+			WithT7PrintFunc(printFunc),
 		)
 		return ECU_T7, sym, err
 	case ECU_T8:
 		sym, err := NewT8File(data,
 			WithT8AutoCorrectChecksum(),
-			WithT8PrintFunc(func(str string, v ...any) { printFunc(fmt.Sprintf(str, v...)) }),
+			WithT8PrintFunc(printFunc),
 		)
 		return ECU_T8, sym, err
 	default:

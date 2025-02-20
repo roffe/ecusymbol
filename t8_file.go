@@ -22,7 +22,7 @@ type T8File struct {
 	*Collection
 
 	autoCorrect bool
-	printFunc   func(string, ...any)
+	printFunc   func(string)
 }
 
 type T8FileOpt func(*T8File) error
@@ -34,7 +34,7 @@ func WithT8AutoCorrectChecksum() T8FileOpt {
 	}
 }
 
-func WithT8PrintFunc(f func(string, ...any)) T8FileOpt {
+func WithT8PrintFunc(f func(string)) T8FileOpt {
 	return func(t8 *T8File) error {
 		t8.printFunc = f
 		return nil
@@ -51,8 +51,8 @@ func NewT8File(data []byte, opts ...T8FileOpt) (*T8File, error) {
 
 	t8 := &T8File{
 		data: data,
-		printFunc: func(format string, v ...any) {
-			log.Printf(format, v...)
+		printFunc: func(s string) {
+			log.Println(s)
 		},
 	}
 	for _, opt := range opts {
@@ -129,7 +129,7 @@ func (t8 *T8File) VerifyChecksum() error {
 		return err
 	}
 
-	t8.printFunc("Checksum area offset: %08X", offset)
+	t8.printFunc(fmt.Sprintf("Checksum area offset: %08X", offset))
 
 	crc, err := t8.GetChecksumInFile(offset)
 	if err != nil {
@@ -141,8 +141,8 @@ func (t8 *T8File) VerifyChecksum() error {
 		return err
 	}
 
-	t8.printFunc("L1 checksum: %X", crc)
-	t8.printFunc("L1 calculated checksum: %X", calculatedCrc)
+	t8.printFunc(fmt.Sprintf("L1 checksum: %X", crc))
+	t8.printFunc(fmt.Sprintf("L1 calculated checksum: %X", calculatedCrc))
 
 	if !bytes.Equal(crc, calculatedCrc) {
 		t8.printFunc("L1 checksum was invalid, should be updated!")
@@ -274,8 +274,8 @@ func (t8 *T8File) CalculateLayer2Checksum(offset int) error {
 	if !chkFound {
 		return errors.New("L2 checksum could not be calculated [file incompatible]")
 	}
-	t8.printFunc("L2 checksum: %08X", sum0)
-	t8.printFunc("L2 calculated checksum: %08X", checksum0)
+	t8.printFunc(fmt.Sprintf("L2 checksum: %08X", sum0))
+	t8.printFunc(fmt.Sprintf("L2 calculated checksum: %08X", checksum0))
 	t8.printFunc("L2 checksum is valid")
 	return nil
 }

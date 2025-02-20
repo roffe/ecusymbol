@@ -22,13 +22,13 @@ type T5File struct {
 	data                      []byte
 	numberOfSymbols           int
 	m_symboltablestartaddress int
-	printFunc                 func(string, ...any)
+	printFunc                 func(string)
 	*Collection
 }
 
 type T5FileOpt func(*T5File) error
 
-func WithT5PrintFunc(f func(string, ...any)) T5FileOpt {
+func WithT5PrintFunc(f func(string)) T5FileOpt {
 	return func(t5 *T5File) error {
 		t5.printFunc = f
 		return nil
@@ -47,7 +47,9 @@ func NewT5File(data []byte, opts ...T5FileOpt) (*T5File, error) {
 	t5 := &T5File{
 		data:       data,
 		Collection: NewCollection(),
-		printFunc:  log.Printf,
+		printFunc: func(s string) {
+			log.Println(s)
+		},
 	}
 
 	for _, opt := range opts {
@@ -127,10 +129,10 @@ func (t5 *T5File) VerifyChecksum() error {
 	}
 	storedChecksum := t5.getChecksum()
 	if checksum != storedChecksum {
-		t5.printFunc("checksum: %X storedChecksum: %X\n", checksum, storedChecksum)
+		t5.printFunc(fmt.Sprintf("checksum: %X storedChecksum: %X\n", checksum, storedChecksum))
 		return ErrChecksumMismatch
 	}
-	t5.printFunc("Checksum %X OK", checksum)
+	t5.printFunc(fmt.Sprintf("Checksum %X OK", checksum))
 	return nil
 }
 
@@ -322,7 +324,7 @@ outer:
 
 	t5.Add(symbols...)
 
-	t5.printFunc("Loaded %d symbols from binary", len(symbols))
+	t5.printFunc(fmt.Sprintf("Loaded %d symbols from binary", len(symbols)))
 
 	return nil
 }

@@ -13,11 +13,12 @@ type T7HeaderField struct {
 }
 
 func (h *T7HeaderField) PrettyString() string {
-	if h.Length == 4 {
+	switch h.Length {
+	case 4:
 		return fmt.Sprintf("0x%02x %d> 0x%08X  %q", h.ID, len(h.Data), binary.BigEndian.Uint32(h.Data), h.Data)
-	} else if h.Length == 2 {
+	case 2:
 		return fmt.Sprintf("0x%02x %d> 0x%04X  %q", h.ID, len(h.Data), binary.BigEndian.Uint16(h.Data), h.Data)
-	} else {
+	default:
 		return fmt.Sprintf("0x%02x> %s", h.ID, string(h.Data))
 	}
 }

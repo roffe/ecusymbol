@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"log"
 )
 
 type T7Checksum struct {
@@ -179,7 +178,7 @@ func (t7 *T7File) findFWChecksum(areaStart int) T7Checksum {
 				areaNumber++
 				pos += 6
 			default:
-				log.Println("skip2")
+				//log.Println("skip2")
 				pos += 2
 			}
 		} else if t7.data[pos] == 0x2A && t7.data[pos+1] == 0x7C {

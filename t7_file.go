@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+
+	"github.com/roffe/ecusymbol/kmp"
 )
 
 const (
@@ -107,11 +109,10 @@ func NewT7File(data []byte, opts ...T7FileOpt) (*T7File, error) {
 		}
 	}
 
-	return t7.init()
+	return t7.parse()
 }
 
-func (t7 *T7File) init() (*T7File, error) {
-	t7.loadHeaders()
+func (t7 *T7File) parse() (*T7File, error) {
 	symbols, err := loadT7Symbols(t7.data, func(s string) {
 		t7.printFunc(s)
 	})
@@ -119,7 +120,28 @@ func (t7 *T7File) init() (*T7File, error) {
 		return nil, err
 	}
 	t7.Collection = symbols
+	t7.loadHeaders()
 	return t7, t7.VerifyChecksum()
+}
+
+func (t7 *T7File) findESPCalibrationPos() int {
+	return kmp.BytePatternSearch(t7.data, []byte{0xF0, 0x03, 0x34, 0x4e, 0x75}, 0)
+}
+
+func (t7 *T7File) GetESPCalibration() byte {
+	pos := t7.findESPCalibrationPos()
+	if pos == -1 {
+		return 0
+	}
+	return t7.data[pos+5]
+}
+
+func (t7 *T7File) SetESPCalibration(val byte) {
+	pos := t7.findESPCalibrationPos()
+	if pos == -1 {
+		return
+	}
+	t7.data[pos+5] = val
 }
 
 func (t7 *T7File) UpdateSymbol(sym *Symbol) error {

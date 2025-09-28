@@ -7,7 +7,6 @@ import (
 	"io"
 	"log"
 	"math"
-	"os"
 	"path/filepath"
 	"strconv"
 )
@@ -25,21 +24,21 @@ type Symbol struct {
 	ExtendedType     uint8
 	Correctionfactor float64
 	Unit             string `json:",omitempty"`
-	Skip             bool   `json:"-"`
+	//Skip             bool   `json:"-"`
 }
 
-func Load(filename string, printFunc func(string)) (ECUType, SymbolCollection, error) {
-	ecuType, err := DetectType(filename)
+func Load(filename string, data []byte, printFunc func(string)) (ECUType, SymbolCollection, error) {
+	ecuType, err := DetectType(data)
 	if err != nil {
 		return ECU_UNKNOWN, nil, err
 	}
 
 	printFunc(fmt.Sprintf("Loading %s", filepath.Base(filename)))
 
-	data, err := os.ReadFile(filename)
-	if err != nil {
-		return -1, nil, err
-	}
+	//data, err := os.ReadFile(filename)
+	//if err != nil {
+	//	return -1, nil, err
+	//}
 
 	switch ecuType {
 	case ECU_T5:

@@ -44,12 +44,12 @@ func newFromT7Bytes(data []byte, symbol_number int) *Symbol {
 }
 
 func loadT7Symbols(data []byte, cb func(string)) (*Collection, error) {
-	for _, h := range GetAllT7HeaderFields(data) {
-		switch h.ID {
-		case 0x91, 0x94, 0x95, 0x97:
-			cb(h.PrettyString())
-		}
-	}
+	//for _, h := range GetAllT7HeaderFields(data) {
+	//	switch h.ID {
+	//	case 0x91, 0x94, 0x95, 0x97:
+	//		cb(h.PrettyString())
+	//	}
+	//}
 
 	if !isBinaryPackedVersion(data, 0x9B) {
 		//return nil, errors.New("non binarypacked not implemented, send your bin to Roffe")

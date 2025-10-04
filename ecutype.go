@@ -7,6 +7,7 @@ const (
 	ECU_T5      ECUType = iota // T5
 	ECU_T7                     // T7
 	ECU_T8                     // T8
+	ECU_ME96                   // ME96 (not supported yet
 )
 
 func (e ECUType) String() string {
@@ -17,6 +18,8 @@ func (e ECUType) String() string {
 		return "T7"
 	case ECU_T8:
 		return "T8"
+	case ECU_ME96:
+		return "ME9.6"
 	case ECU_UNKNOWN:
 		fallthrough
 	default:
@@ -32,6 +35,8 @@ func ECUTypeFromString(s string) ECUType {
 		return ECU_T7
 	case "T8":
 		return ECU_T8
+	case "ME9.6":
+		return ECU_ME96
 	default:
 		return ECU_UNKNOWN
 	}

@@ -174,6 +174,7 @@ var correctionFactors = map[string]float64{
 	"Pwm_ind_rpm!":                                  10,
 	"Reg_kon_mat":                                   0.1,
 	"Reg_last!":                                     0.01,
+	"Reg_varv!":                                     10,
 	"Regl_tryck":                                    0.01,
 	"Ret_delta_rpm!":                                10,
 	"Ret_down_rpm!":                                 10,

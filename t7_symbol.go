@@ -124,7 +124,7 @@ outer:
 		sym_type := buff[8]
 
 		var real_rom_address uint32
-		if sram_address > 0xF00000 {
+		if sram_address > T7SRAMAddress {
 			real_rom_address = sram_address - 0xEF02F0
 		} else {
 			real_rom_address = sram_address
@@ -140,7 +140,7 @@ outer:
 			Correctionfactor: GetCorrectionfactor(strings.TrimSpace(symbolNames[symb_count])),
 			Unit:             GetUnit(strings.TrimSpace(symbolNames[symb_count])),
 		}
-		if sym.Address < 0x0F00000 {
+		if sym.Address < T7SRAMAddress {
 			data, err := readSymbolData(data, sym, 0)
 			if err == nil {
 				sym.data = data
@@ -168,7 +168,7 @@ outer:
 	}
 	/*
 		for _, sym := range symCol.Symbols() {
-			if sym.Address < 0x0F00000 {
+			if sym.Address < T7SRAMAddress {
 				sym.data, err = readSymbolData(data, sym, 0)
 				if err != nil {
 					return nil, err
@@ -285,7 +285,7 @@ func readAllT7SymbolsData(fileBytes []byte, symbols []*Symbol) error {
 
 	for _, sym := range symbols {
 		sym.SramOffset = sramOffset
-		if sym.Address < 0x0F00000 {
+		if sym.Address < T7SRAMAddress {
 			sym.data, err = readSymbolData(fileBytes, sym, 0)
 			if err != nil {
 				return err
@@ -311,6 +311,11 @@ func readAllT7SymbolsData(fileBytes []byte, symbols []*Symbol) error {
 	return nil
 }
 
+func reverseInt(v uint32) uint32 {
+	return (v >> 24) | ((v >> 8) & 0xFF00) | ((v << 8) & 0xFF0000) | (v << 24)
+}
+
+/*
 func reverseInt(value uint32) uint32 {
 	// input            0x34FCEF00
 	// desired output   0x00EFFC34
@@ -322,6 +327,7 @@ func reverseInt(value uint32) uint32 {
 
 	return retval
 }
+*/
 
 func readSymbolData(file []byte, s *Symbol, offset uint32) ([]byte, error) {
 	//	log.Println("readSymbolData: ", s.String())

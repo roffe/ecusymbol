@@ -1927,9 +1927,9 @@ var axisT7 = AxisInformation{
 		"IgnStartCal.X_EthActSP",
 		"IgnStartCal.T_AirSP",
 		"IgnStartCal.fi_StartMap",
-		"rpm",
-		"°C",
-		"°",
+		"Ethanol %",
+		"Temp",
+		"Degrees",
 		"",
 		"ActualIn.T_AirInlet",
 	},
@@ -3724,3 +3724,10 @@ var axisT7 = AxisInformation{
 		"",
 	},
 }
+
+/*
+ Symbol	Description	X-axis	X-axis description	Y-axis	Y-axis description
+IgnNormCal.GasMap	Normal ignition map when Gas mode is active. Gets activated when FlashSave.ST_GasHybridAct is set (gets set by Tech2 on gas hybrid cars) and one cylinder failed injection. In this case Lambda.ST_GasActive gets set. At the same time diagnostic mode is forced into LOBD. Resolution is 0.1 °.
+IgnNormCal.m_AirXSP	Normal ignition map airmass site. Also used for gas map. Resolution is xxx.
+IgnNormCal.n_EngYSP	Normal ignition RPM site. Also used for gas map. Resolution is 1.
+*/

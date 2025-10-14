@@ -12,8 +12,7 @@ import (
 )
 
 type Symbol struct {
-	data []byte
-
+	data             []byte
 	Name             string
 	Number           int
 	SramOffset       uint32
@@ -24,7 +23,6 @@ type Symbol struct {
 	ExtendedType     uint8
 	Correctionfactor float64
 	Unit             string `json:",omitempty"`
-	//Skip             bool   `json:"-"`
 }
 
 func Load(filename string, data []byte, printFunc func(string)) (ECUType, SymbolCollection, error) {
@@ -34,11 +32,6 @@ func Load(filename string, data []byte, printFunc func(string)) (ECUType, Symbol
 	}
 
 	printFunc(fmt.Sprintf("Loading %s", filepath.Base(filename)))
-
-	//data, err := os.ReadFile(filename)
-	//if err != nil {
-	//	return -1, nil, err
-	//}
 
 	switch ecuType {
 	case ECU_T5:
@@ -83,39 +76,6 @@ func (s *Symbol) Read(r io.Reader) error {
 	}
 	return nil
 }
-
-/*
-	func (s *Symbol) Decode() interface{} {
-		switch {
-		case s.Length == 1:
-			if len(s.data) != 1 {
-				return -1
-			}
-			if s.Type&SIGNED == SIGNED {
-				return s.Int8()
-			}
-			return s.Uint8()
-		case s.Length == 2:
-			if len(s.data) != 2 {
-				return -1
-			}
-			if s.Type&SIGNED == SIGNED {
-				return s.Int16()
-			}
-			return s.Uint16()
-		case s.Length == 4:
-			if len(s.data) != 4 {
-				return -1
-			}
-			if s.Type&SIGNED == SIGNED {
-				return s.Int32()
-			}
-			return s.Uint32()
-		default:
-			return -1
-		}
-	}
-*/
 
 func (s *Symbol) Bytes() []byte {
 	return s.data
@@ -194,7 +154,6 @@ func (s *Symbol) Int64() int64 {
 func (s *Symbol) Float64s() []float64 {
 	var floats []float64
 	for _, v := range s.Ints() {
-		//log.Printf("%f", T5Offsets[s.Name])
 		floats = append(floats, (float64(v)*s.Correctionfactor)+T5Offsets[s.Name])
 	}
 	return floats
@@ -204,7 +163,6 @@ func (s *Symbol) Float64() float64 {
 	if len(s.data) != int(s.Length) {
 		return -1
 	}
-
 	var val int64
 	switch s.Length {
 	case 1:
@@ -277,8 +235,8 @@ func (s *Symbol) Float642() float64 {
 }
 
 func (s *Symbol) Int() int {
-	switch {
-	case s.Length == 1:
+	switch s.Length {
+	case 1:
 		if len(s.data) != 1 {
 			return -1
 		}
@@ -286,7 +244,7 @@ func (s *Symbol) Int() int {
 			return int(s.Int8())
 		}
 		return int(s.Uint8())
-	case s.Length == 2:
+	case 2:
 		if len(s.data) != 2 {
 			return -1
 		}
@@ -294,7 +252,7 @@ func (s *Symbol) Int() int {
 			return int(s.Int16())
 		}
 		return int(s.Uint16())
-	case s.Length == 4:
+	case 4:
 		if len(s.data) != 4 {
 			return -1
 		}
@@ -302,7 +260,7 @@ func (s *Symbol) Int() int {
 			return int(s.Int32())
 		}
 		return int(s.Uint32())
-	case s.Length == 8:
+	case 8:
 		if len(s.data) != 8 {
 			return -1
 		}

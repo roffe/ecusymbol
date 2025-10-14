@@ -31,6 +31,16 @@ var axisT5 = AxisInformation{
 		XFrom:        "Medeltrot",
 		YFrom:        "Rpm",
 	},
+	"Tryck_mat_a!": Axis{
+		X:            "Pwm_ind_trot!",
+		Y:            "Pwm_ind_rpm!",
+		Z:            "Tryck_mat!",
+		XDescription: "Throttle",
+		YDescription: "Rpm",
+		ZDescription: "Boost",
+		XFrom:        "Medeltrot",
+		YFrom:        "Rpm",
+	},
 	"Ign_map_0!": Axis{
 		X:            "Ign_map_0_x_axis!",
 		Y:            "Ign_map_0_y_axis!",
@@ -81,9 +91,39 @@ var axisT5 = AxisInformation{
 		XFrom:        "Medeltrot",
 		YFrom:        "Rpm",
 	},
+	"Reg_kon_mat_a!": Axis{
+		X:            "Pwm_ind_trot!",
+		Y:            "Pwm_ind_rpm!",
+		Z:            "Reg_kon_mat!",
+		XDescription: "Throttle",
+		YDescription: "Rpm",
+		ZDescription: "BCV Constant",
+		XFrom:        "Medeltrot",
+		YFrom:        "Rpm",
+	},
+	"Ign_map_2!": Axis{
+		X:            "Ign_map_2_x_axis!",
+		Y:            "Ign_map_2_y_axis!",
+		Z:            "Ign_map_2!",
+		XDescription: "MAP",
+		YDescription: "RPM",
+		ZDescription: "Ignition knock map",
+		XFrom:        "P_medel",
+		YFrom:        "Rpm",
+	},
+	"Ign_map_4!": Axis{
+		X:            "Ign_map_0_x_axis!",
+		Y:            "Ign_map_0_y_axis!",
+		Z:            "Ign_map_0!",
+		XDescription: "MAP",
+		YDescription: "RPM",
+		ZDescription: "Ignition warmup map",
+		XFrom:        "P_medel",
+		YFrom:        "Rpm",
+	},
 }
 
 /*
 Symbol	Description	X-axis	X-axis description	Y-axis	Y-axis description
-Reg_kon_mat!	Boost Regulation Map, BCV Constant (manual).	Pwm_ind_trot!	Relative throttle value	Pwm_ind_rpm!	Rpm axis for several tables
+Ign_map_2!	Ignition map for knocking correction (2)	Ign_map_2_x_axis!	Ignition map 2 x-axis, pressure from MAP sensor	Ign_map_2_y_axis!	Ignition map 2 y-axis, RPM
 */

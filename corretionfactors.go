@@ -62,6 +62,8 @@ var correctionFactors = map[string]float64{
 	"MyrtilosAdap.WBLambda_FFMap":       1,
 	"Myrtilos.InjectorDutyCycle":        1,
 	"PedalMapCal.X_PedalMap":            0.1,
+	"MaxVehicCal.v_MaxSpeed":            0.1,
+	//"IgnTempCal.n_EngXSP":               10,
 	//T5
 
 	// "Reg_kon_mat"))

@@ -47,7 +47,7 @@ var axisT5 = AxisInformation{
 		Z:            "Ign_map_0!",
 		XDescription: "MAP",
 		YDescription: "RPM",
-		ZDescription: "Ign angel",
+		ZDescription: "Normal ignition map",
 		XFrom:        "P_medel",
 		YFrom:        "Rpm",
 	},
@@ -114,7 +114,7 @@ var axisT5 = AxisInformation{
 	"Ign_map_4!": Axis{
 		X:            "Ign_map_0_x_axis!",
 		Y:            "Ign_map_0_y_axis!",
-		Z:            "Ign_map_0!",
+		Z:            "Ign_map_4!",
 		XDescription: "MAP",
 		YDescription: "RPM",
 		ZDescription: "Ignition warmup map",

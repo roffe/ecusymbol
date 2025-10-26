@@ -137,6 +137,15 @@ func (t5 *T5File) VerifyChecksum() error {
 }
 
 func (t5 *T5File) Save(filename string) error {
+	log.Printf("Saving T5 file to %s", filename)
+	for _, sym := range t5.Symbols() {
+		if sym.Address == 0 {
+			continue
+		}
+		addr := sym.Address
+		//		log.Printf("Writing symbol %s to address %X", sym.Name, addr)
+		copy(t5.data[addr:addr+uint32(len(sym.data))], sym.data)
+	}
 	if err := t5.UpdateChecksum(); err != nil {
 		return err
 	}

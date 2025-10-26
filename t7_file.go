@@ -176,6 +176,8 @@ func (t7 *T7File) Save(filename string) error {
 		for idx, b := range sym.data {
 			(t7.data)[addr+uint32(idx)] = b
 		}
+		//copy(t7.data[addr:addr+uint32(len(sym.data))], sym.data)
+
 	}
 
 	if err := t7.UpdateChecksum(); err != nil {

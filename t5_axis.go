@@ -34,7 +34,7 @@ var axisT5 = AxisInformation{
 	"Tryck_mat_a!": Axis{
 		X:            "Pwm_ind_trot!",
 		Y:            "Pwm_ind_rpm!",
-		Z:            "Tryck_mat!",
+		Z:            "Tryck_mat_a!",
 		XDescription: "Throttle",
 		YDescription: "Rpm",
 		ZDescription: "Boost",

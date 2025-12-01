@@ -13,14 +13,15 @@ import (
 	"github.com/roffe/ecusymbol/kmp"
 )
 
-func newFromT7Bytes(data []byte, symbol_number int) *Symbol {
-	extractUint32 := func(data []byte, start int) uint32 {
-		return uint32(data[start])<<24 | uint32(data[start+1])<<16 | uint32(data[start+2])<<8 | uint32(data[start+3])
-	}
+func extractUint32(data []byte, start int) uint32 {
+	return uint32(data[start])<<24 | uint32(data[start+1])<<16 | uint32(data[start+2])<<8 | uint32(data[start+3])
+}
 
-	extractUint16 := func(data []byte, start int) uint16 {
-		return uint16(data[start])<<8 | uint16(data[start+1])
-	}
+func extractUint16(data []byte, start int) uint16 {
+	return uint16(data[start])<<8 | uint16(data[start+1])
+}
+
+func NewSymbolFromT7Bytes(data []byte, symbol_number int) *Symbol {
 
 	internall_address := extractUint32(data, 0)
 
@@ -94,7 +95,7 @@ outer:
 		}
 	}
 
-	cb(fmt.Sprintln("Symbols found: ", symbolCount))
+	cb(fmt.Sprintln("Symbols found:", symbolCount))
 
 	searchPattern := []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0}
 	searchPattern[12] = byte(symbolInternalPositions[0] >> 8)
@@ -183,7 +184,7 @@ outer:
 }
 
 func binaryPacked(data []byte, cb func(string)) (*Collection, error) {
-	compressed, addressTableOffset, symbolNameTableOffset, symbolTableLength, err := getOffsets(data, cb)
+	compressed, addressTableOffset, symbolNameTableOffset, symbolTableLength, err := GetT7Offsets(data, cb)
 	if err != nil && !errors.Is(err, ErrSymbolTableNotFound) {
 		return nil, err
 	}
@@ -203,7 +204,7 @@ func binaryPacked(data []byte, cb func(string)) (*Collection, error) {
 		if data[pos] == 0x53 && data[pos+1] == 0x43 { // SC
 			break
 		}
-		symbols = append(symbols, newFromT7Bytes(data[pos:pos+10], symb_count))
+		symbols = append(symbols, NewSymbolFromT7Bytes(data[pos:pos+10], symb_count))
 		symb_count++
 	}
 	//log.Println("Symbols found: ", symb_count)
@@ -219,6 +220,10 @@ func binaryPacked(data []byte, cb func(string)) (*Collection, error) {
 		}
 
 		for i := 0; i < len(symbolNames)-1; i++ {
+			if i >= len(symbols) {
+				cb("Missing symbol in name table " + strconv.Itoa(i))
+				continue
+			}
 			symbols[i].Name = strings.TrimSpace(symbolNames[i])
 			symbols[i].Unit = GetUnit(symbols[i].Name)
 			symbols[i].Correctionfactor = GetCorrectionfactor(symbols[i].Name)
@@ -355,7 +360,7 @@ var searchPattern = []byte{0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 // var searchPattern2 = []byte{0x00, 0x08, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 //var searchPattern3 = []byte{0x73, 0x59, 0x4D, 0x42, 0x4F, 0x4C, 0x74, 0x41, 0x42, 0x4C, 0x45, 0x00} // 12
 
-func getOffsets(data []byte, cb func(string)) (bool, int, int, int, error) {
+func GetT7Offsets(data []byte, cb func(string)) (bool, int, int, int, error) {
 	addressTableOffset := kmp.BytePatternSearch(data, searchPattern, 0x30000) - 0x06
 	cb(fmt.Sprintf("Address table offset: %08X", addressTableOffset))
 

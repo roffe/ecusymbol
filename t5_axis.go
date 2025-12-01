@@ -94,7 +94,7 @@ var axisT5 = AxisInformation{
 	"Reg_kon_mat_a!": Axis{
 		X:            "Pwm_ind_trot!",
 		Y:            "Pwm_ind_rpm!",
-		Z:            "Reg_kon_mat!",
+		Z:            "Reg_kon_mat_a!",
 		XDescription: "Throttle",
 		YDescription: "Rpm",
 		ZDescription: "BCV Constant",

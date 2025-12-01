@@ -17,6 +17,7 @@ var T5Offsets = map[string]float64{
 	"Insp_mat!":         0.5,
 	"Fuel_map_xaxis!":   -1,
 	"Tryck_mat!":        -1,
+	"Tryck_mat_a!":      -1,
 	"Ign_map_0_x_axis!": -1,
 	"Ign_map_2_x_axis!": -1,
 }

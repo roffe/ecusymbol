@@ -1830,8 +1830,8 @@ var axisT7 = AxisInformation{
 		"mg/c",
 		"rpm",
 		"° pull",
-		"",
-		"",
+		"MAF.m_AirInlet",
+		"ActualIn.n_Engine",
 	},
 	"IgnLOffCal.CombTab": Axis{
 		"",
@@ -2110,8 +2110,8 @@ var axisT7 = AxisInformation{
 		"mg/c",
 		"rpm",
 		"°",
-		"",
-		"",
+		"MAF.m_AirInlet",
+		"ActualIn.n_Engine",
 	},
 	"KnkFuelCal.fi_MapMaxOffset": Axis{
 		"IgnKnkCal.m_AirXSP",

@@ -25,6 +25,7 @@ var correctionFactors = map[string]float64{
 	"ActualIn.p_AirInlet":               0.001,
 	"AirCompCal.PressMap":               0.001,
 	"BFuelCal.Map":                      0.01,
+	"BFuelCal.GasMap":                   0.01,
 	"BFuelCal.StartMap":                 0.01,
 	"BoostCal.RegMap":                   0.1,
 	"DisplProt.LambdaScanner":           0.01,
@@ -37,6 +38,7 @@ var correctionFactors = map[string]float64{
 	"IgnIdleCal.fi_IdleMap":             0.1,
 	"IgnMastProt.fi_Offset":             0.1,
 	"IgnNormCal.Map":                    0.1,
+	"IgnNormCal.GasMap":                 0.1,
 	"IgnProt.fi_Offset":                 0.1,
 	"IgnStartCal.fi_StartMap":           0.1,
 	"IgnStartCal.X_EthActSP":            0.1,
@@ -64,8 +66,24 @@ var correctionFactors = map[string]float64{
 	"PedalMapCal.X_PedalMap":            0.1,
 	"MaxVehicCal.v_MaxSpeed":            0.1,
 	//"IgnTempCal.n_EngXSP":               10,
+	"IgnKnkCal.IndexMap":                     0.01,
+	"KnkFuelCal.fi_MapMaxOff":                0.1,
+	"TrqLimCal.Trq_CompressorNoiseRedLimMAP": 0.1,
+	"TrqLimCal.Trq_MaxEngineAutTab2":         0.1,
+	"TrqLimCal.Trq_MaxEngineAutTab1":         0.1,
+	"TrqLimCal.Trq_MaxEngineManTab2":         0.1,
+	"TrqLimCal.Trq_MaxEngineManTab1":         0.1,
+	"InjAnglCal.Map":                         0.1,
+	"IgnAbsCal.fi_IgnMBTMAP":                 0.1,
+	"IgnAbsCal.fi_FuelCutMAP":                0.1,
+	"IgnAbsCal.fi_StartMAP":                  0.1,
+	"PedalMapCal.Trq_RequestMap":             0.1,
+	"TrqMastCal.Trq_PedYSP":                  0.1,
+	"TrqMastCal.X_AccPedalMAP":               0.1,
+	"AirCtrlCal.q_AirInletSP":                0.01,
+	"AirCtrlCal.PRatioMaxTab":                0.01,
+	"TMCProt.Trq_TcsTcmMinLim":               0.1,
 	//T5
-
 	// "Reg_kon_mat"))
 	// {
 	// 	if (GetSymbolLength(symbolname) == 0x80)
@@ -77,39 +95,40 @@ var correctionFactors = map[string]float64{
 	// 		returnvalue = 0.1;
 	// 	}
 	// }
-	"Accel_konst!":            0.00390625,   //returnvalue = 0.0078125, // 1/12,
-	"Adapt_inj_imat!":         0.001953125,  // 1/51,
-	"Adapt_injfaktor_high!":   0.001953125,  // 1/51,
-	"Adapt_injfaktor_low!":    0.001953125,  // 1/51,
-	"Adapt_injfaktor!":        0.001953125,  // 1/51,
-	"Adapt_korr_high!":        0.001953125,  // 1/51,
-	"Adapt_korr_low!":         0.001953125,  // 1/51,
-	"Adapt_korr!":             0.001953125,  // 1/512
-	"Adapt_ref!":              0.001953125,  // 1/51,
-	"Adapt_ref":               0.001953125,  // 1/51,
-	"After_fcut_tab!":         0.0009765625, // 1/102,
-	"Ap_max_rpm!":             10,
-	"Apc_knock_tab!":          0.01,
-	"Batt_korr_tab!":          0.004,       // 1/25,
-	"Cyl_komp!":               0.001953125, // 1/512 //Cylinder Compensation: (Cyl_komp+384)/51,
-	"Dash_rpm_axis!":          10,
-	"Del_mat!":                3,
-	"Derivata_fuel_rpm!":      10,
-	"Derivata_grans!":         10,
-	"Detect_map_x_axis!":      0.01,
-	"Diag_speed_load!":        0.01,
-	"Diag_speed_rpm!":         10,
-	"Eftersta_fak!":           0.0078125,   // 0.01,
-	"Eftersta_fak2!":          0.0078125,   //0.01,
-	"Fload_tab!":              0.001953125, // 1/51,
-	"Fuel_knock_mat!":         0.00390625,  // 1/25,
-	"Fuel_map_xaxis!":         0.01,
-	"Fuel_map_yaxis!":         10,
-	"Gear_st!":                0.1, // 1/ ((256*256) / 260,
-	"Grund_last!":             0.01,
-	"Hot_start_fak!":          0.0009765625, // 128/25,
-	"Hot_tab!":                0.0009765625, // 1/102,
-	"Idle_fuel_korr!":         0.00390625,   // 1/25,
+	"Accel_konst!":          0.00390625,   //returnvalue = 0.0078125, // 1/12,
+	"Adapt_inj_imat!":       0.001953125,  // 1/51,
+	"Adapt_injfaktor_high!": 0.001953125,  // 1/51,
+	"Adapt_injfaktor_low!":  0.001953125,  // 1/51,
+	"Adapt_injfaktor!":      0.001953125,  // 1/51,
+	"Adapt_korr_high!":      0.001953125,  // 1/51,
+	"Adapt_korr_low!":       0.001953125,  // 1/51,
+	"Adapt_korr!":           0.001953125,  // 1/512
+	"Adapt_ref!":            0.001953125,  // 1/51,
+	"Adapt_ref":             0.001953125,  // 1/51,
+	"After_fcut_tab!":       0.0009765625, // 1/102,
+	"Ap_max_rpm!":           10,
+	"Apc_knock_tab!":        0.01,
+	"Batt_korr_tab!":        0.004,       // 1/25,
+	"Cyl_komp!":             0.001953125, // 1/512 //Cylinder Compensation: (Cyl_komp+384)/51,
+	"Dash_rpm_axis!":        10,
+	"Del_mat!":              3,
+	"Derivata_fuel_rpm!":    10,
+	"Derivata_grans!":       10,
+	"Detect_map_x_axis!":    0.01,
+	"Diag_speed_load!":      0.01,
+	"Diag_speed_rpm!":       10,
+	"Eftersta_fak!":         0.0078125,   // 0.01,
+	"Eftersta_fak2!":        0.0078125,   //0.01,
+	"Fload_tab!":            0.001953125, // 1/51,
+	//"Fuel_knock_mat!":         0.00390625,  // 1/25,
+	"Fuel_map_xaxis!": 0.01,
+	"Fuel_map_yaxis!": 10,
+	"Gear_st!":        0.1, // 1/ ((256*256) / 260,
+	"Grund_last!":     0.01,
+	"Hot_start_fak!":  0.0009765625, // 128/25,
+	"Hot_tab!":        0.0009765625, // 1/102,
+
+	"Idle_fuel_korr!":         0.00390625, // 1/256
 	"Idle_rpm_tab!":           10,
 	"Idle_st_last!":           0.01,
 	"Idle_st_rpm!":            10,
@@ -117,8 +136,10 @@ var correctionFactors = map[string]float64{
 	"Ign_idle_angle_start":    0.1,
 	"Ign_idle_angle!":         0.1,
 	"Ign_map_0_x_axis!":       0.01,
+	"Fuel_knock_xaxis!":       0.01,
 	"Ign_map_0!":              0.1,
 	"Ign_map_1!":              0.1,
+	"Ign_map_1_y_axis!":       1,
 	"Ign_map_2_x_axis!":       0.01,
 	"Ign_map_2!":              0.1,
 	"Ign_map_3!":              0.1,
@@ -131,6 +152,7 @@ var correctionFactors = map[string]float64{
 	"Ign_map_8!":              0.1,
 	"Inj_map_0!":              1,          // 0.00390625, // 1/256 LOLA specifi
 	"Insp_mat!":               0.00390625, // 1/256
+	"Fuel_knock_mat!":         0.00390625, // 1/256
 	"Iv_min_load!":            0.01,
 	"Kadapt_load_high!":       0.01,
 	"Kadapt_load_low!":        0.01,
@@ -174,10 +196,12 @@ var correctionFactors = map[string]float64{
 	"Pressure map scaled for 3 bar mapsensor":       0.012,
 	"Purge_map_xaxis!":                              0.01,
 	"Pwm_ind_rpm!":                                  10,
-	"Reg_kon_mat":                                   0.1,
 	"Reg_last!":                                     0.01,
 	"Reg_varv!":                                     10,
 	"Regl_tryck":                                    0.01,
+	"Regl_tryck_fgm!":                               0.01,
+	"Regl_tryck_sgm!":                               0.01,
+	"Regl_tryck_fgaut!":                             0.01,
 	"Ret_delta_rpm!":                                10,
 	"Ret_down_rpm!":                                 10,
 	"Ret_fuel_fak!":                                 0.0009765625, // 128/25,
@@ -200,8 +224,8 @@ var correctionFactors = map[string]float64{
 	"Tryck_vakt_tab!":                               0.01,
 	"Turbo_knock_press":                             0.01, // ba,
 	"Turbo_knock_tab":                               0.01,
-
-	"BstKnkCal.fi_offsetXSP": 0.1,
+	"BstKnkCal.fi_offsetXSP":                        0.1,
+	"Wait_count_tab!":                               1,
 }
 
 func GetCorrectionfactor(name string) float64 {
@@ -223,7 +247,7 @@ func GetPrecision(corrFac float64) int {
 	case 0.0009765625: // 1/1024
 		precission = 4
 	case 0.0078125: // 1/128
-		precission = 3
+		precission = 2
 	}
 	return precission
 }

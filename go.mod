@@ -1,6 +1,6 @@
 module github.com/roffe/ecusymbol
 
-go 1.21.5
+go 1.25.5
 
 require (
 	github.com/yeka/zip v0.0.0-20231116150916-03d6312748a9

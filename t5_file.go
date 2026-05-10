@@ -152,6 +152,20 @@ func (t5 *T5File) Save(filename string) error {
 	return os.WriteFile(filename, t5.data, 0644)
 }
 
+func (t5 *T5File) Byte() ([]byte, error) {
+	for _, sym := range t5.Symbols() {
+		if sym.Address == 0 {
+			continue
+		}
+		addr := sym.Address
+		copy(t5.data[addr:addr+uint32(len(sym.data))], sym.data)
+	}
+	if err := t5.UpdateChecksum(); err != nil {
+		return nil, err
+	}
+	return t5.data, nil
+}
+
 func readEndMarker(data []byte, marker byte) (int, error) {
 	if len(data) == 0 {
 		return 0, errors.New("data slice is empty")

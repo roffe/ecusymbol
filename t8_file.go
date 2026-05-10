@@ -111,6 +111,27 @@ func (t8 *T8File) Save(filename string) error {
 	return nil
 }
 
+func (t8 *T8File) Byte() ([]byte, error) {
+	for _, sym := range t8.Symbols() {
+		if sym.Address == 0 {
+			continue
+		}
+		if sym.Address > 0x100000 { //+32768 {
+			if sym.Address > uint32(len(t8.data)) {
+				//log.Printf("%s: addr %X sram offset %X", sym.Name, sym.Address, sym.SramOffset)
+				//return nil, ErrAddressOutOfRange
+				continue
+			}
+		}
+		copy(t8.data[sym.Address:sym.Address+uint32(len(sym.data))], sym.data)
+	}
+
+	if err := t8.VerifyChecksum(); err != nil {
+		return nil, err
+	}
+	return t8.data, nil
+}
+
 func (t8 *T8File) Version() string {
 	sym := t8.GetByName("ECUIDCal.ApplicationFileName")
 	if sym == nil {

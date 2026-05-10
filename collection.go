@@ -16,6 +16,7 @@ type SymbolCollection interface {
 	Count() int
 	Add(symbols ...*Symbol)
 	Save(filename string) error
+	Byte() ([]byte, error)
 	Version() string
 }
 
@@ -43,6 +44,10 @@ func NewCollection(symbols ...*Symbol) *Collection {
 
 func (c *Collection) Save(filename string) error {
 	return nil
+}
+
+func (c *Collection) Byte() ([]byte, error) {
+	return nil, nil
 }
 
 func (c *Collection) GetByName(name string) *Symbol {

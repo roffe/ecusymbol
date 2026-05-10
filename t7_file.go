@@ -195,6 +195,31 @@ func (t7 *T7File) Save(filename string) error {
 	return nil
 }
 
+func (t7 *T7File) Byte() ([]byte, error) {
+	for _, sym := range t7.Symbols() {
+		addr := sym.Address
+		if sym.Address > 0x7FFFFF {
+			if sym.Address-sym.SramOffset > uint32(len(t7.data)) {
+				return nil, ErrAddressOutOfRange
+			}
+			addr = sym.Address - sym.SramOffset
+		}
+		for idx, b := range sym.data {
+			(t7.data)[addr+uint32(idx)] = b
+		}
+		//copy(t7.data[addr:addr+uint32(len(sym.data))], sym.data)
+	}
+
+	if err := t7.UpdateChecksum(); err != nil {
+		return nil, err
+	}
+
+	if err := t7.VerifyChecksum(); err != nil {
+		return nil, err
+	}
+	return t7.data, nil
+}
+
 func (t7 *T7File) Version() string {
 	return t7.softwareVersion
 }

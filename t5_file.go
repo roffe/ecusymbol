@@ -23,6 +23,7 @@ type T5File struct {
 	numberOfSymbols           int
 	m_symboltablestartaddress int
 	printFunc                 func(string)
+	softwareVersion           string
 	*Collection
 }
 
@@ -65,7 +66,40 @@ func (t5 *T5File) init() (*T5File, error) {
 	if err := t5.parseData(); err != nil {
 		return nil, err
 	}
+	t5.softwareVersion = t5.findSoftwareVersion()
 	return t5, t5.VerifyChecksum()
+}
+
+// findSoftwareVersion scans the binary for a software ID matching the
+// "XXXXXXXX.NNA$" pattern (8 chars, dot, two digits, alpha, dollar sign)
+// and returns the 12 characters preceding the '$'. The byte immediately
+// after '$' encodes lock state (0x01 = locked, 0x00 = unlocked).
+func (t5 *T5File) findSoftwareVersion() string {
+	const startOffset = 0x1b00 // was 0x2000 for T5.5, 0x1b00 supports T5.2
+	n := len(t5.data)
+	if n <= startOffset+12 {
+		return ""
+	}
+	for i := startOffset; i < n; i++ {
+		if t5.data[i] != '$' || i < 12 {
+			continue
+		}
+		if t5.data[i-4] == '.' &&
+			isT5Numeric(t5.data[i-3]) &&
+			isT5Numeric(t5.data[i-2]) &&
+			isT5Alpha(t5.data[i-1]) {
+			return string(t5.data[i-12 : i])
+		}
+	}
+	return ""
+}
+
+func isT5Alpha(b byte) bool {
+	return (b >= 'A' && b <= 'Z') || (b >= 'a' && b <= 'z')
+}
+
+func isT5Numeric(b byte) bool {
+	return b >= '0' && b <= '9'
 }
 
 func (t5 *T5File) calculateChecksum() (uint32, error) {
@@ -164,6 +198,10 @@ func (t5 *T5File) Byte() ([]byte, error) {
 		return nil, err
 	}
 	return t5.data, nil
+}
+
+func (t5 *T5File) Version() string {
+	return t5.softwareVersion
 }
 
 func readEndMarker(data []byte, marker byte) (int, error) {

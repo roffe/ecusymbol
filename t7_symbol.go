@@ -22,7 +22,6 @@ func extractUint16(data []byte, start int) uint16 {
 }
 
 func NewSymbolFromT7Bytes(data []byte, symbol_number int) *Symbol {
-
 	internall_address := extractUint32(data, 0)
 
 	symbol_length := uint16(0x08)
@@ -53,18 +52,18 @@ func loadT7Symbols(data []byte, cb func(string)) (*Collection, error) {
 	//}
 
 	if !isBinaryPackedVersion(data, 0x9B) {
-		//return nil, errors.New("non binarypacked not implemented, send your bin to Roffe")
-		//log.Println("Not a binarypacked version")
+		// return nil, errors.New("non binarypacked not implemented, send your bin to Roffe")
+		// log.Println("Not a binarypacked version")
 		cb("Not a binarypacked symbol table")
 		return nonBinaryPacked(data, cb)
 
 	} else {
-		//log.Println("Binary packed version")
+		// log.Println("Binary packed version")
 		cb("Found binary packed symbol table")
 		return binaryPacked(data, cb)
 
 	}
-	//return nil, errors.New("not implemented")
+	// return nil, errors.New("not implemented")
 }
 
 func nonBinaryPacked(data []byte, cb func(string)) (*Collection, error) {
@@ -121,7 +120,7 @@ outer:
 		buff := data[pos : pos+14]
 		sram_address := binary.BigEndian.Uint32(buff[0:4])
 		symbol_length := binary.BigEndian.Uint16(buff[4:6])
-		//internal_address := binary.BigEndian.Uint32(buff[10:14])
+		// internal_address := binary.BigEndian.Uint32(buff[10:14])
 		sym_type := buff[8]
 
 		var real_rom_address uint32
@@ -188,7 +187,7 @@ func binaryPacked(data []byte, cb func(string)) (*Collection, error) {
 	if err != nil && !errors.Is(err, ErrSymbolTableNotFound) {
 		return nil, err
 	}
-	//os.WriteFile("compressedSymbolNameTable.bin", data[symbolNameTableOffset:symbolNameTableOffset+symbolTableLength, 0644)
+	// os.WriteFile("compressedSymbolNameTable.bin", data[symbolNameTableOffset:symbolNameTableOffset+symbolTableLength, 0644)
 
 	if addressTableOffset == -1 {
 		return nil, ErrAddressTableOffsetNotFound
@@ -197,7 +196,7 @@ func binaryPacked(data []byte, cb func(string)) (*Collection, error) {
 	var symb_count int
 	var symbols []*Symbol
 
-	//os.WriteFile("adresstable.bin", data[addressTableOffset:], 0644)
+	// os.WriteFile("adresstable.bin", data[addressTableOffset:], 0644)
 
 	// parse addresstable and create symbols with generic names
 	for pos := addressTableOffset; pos < len(data)+10; pos += 10 {
@@ -207,7 +206,7 @@ func binaryPacked(data []byte, cb func(string)) (*Collection, error) {
 		symbols = append(symbols, NewSymbolFromT7Bytes(data[pos:pos+10], symb_count))
 		symb_count++
 	}
-	//log.Println("Symbols found: ", symb_count)
+	// log.Println("Symbols found: ", symb_count)
 	cb(fmt.Sprintf("Loaded %d symbols from binary", symb_count))
 
 	if compressed {
@@ -309,7 +308,6 @@ func readAllT7SymbolsData(fileBytes []byte, symbols []*Symbol) error {
 			} else {
 				log.Printf("symbol address out of range:%X %s", sym.Address-dataOffsetValue, sym.String())
 			}
-
 		}
 	}
 
@@ -358,8 +356,7 @@ func determineVersion(data []byte) (string, error) {
 var searchPattern = []byte{0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00}
 
 // var searchPattern2 = []byte{0x00, 0x08, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
-//var searchPattern3 = []byte{0x73, 0x59, 0x4D, 0x42, 0x4F, 0x4C, 0x74, 0x41, 0x42, 0x4C, 0x45, 0x00} // 12
-
+// var searchPattern3 = []byte{0x73, 0x59, 0x4D, 0x42, 0x4F, 0x4C, 0x74, 0x41, 0x42, 0x4C, 0x45, 0x00} // 12
 func GetT7Offsets(data []byte, cb func(string)) (bool, int, int, int, error) {
 	addressTableOffset := kmp.BytePatternSearch(data, searchPattern, 0x30000) - 0x06
 	cb(fmt.Sprintf("Address table offset: %08X", addressTableOffset))
@@ -376,7 +373,7 @@ func GetT7Offsets(data []byte, cb func(string)) (bool, int, int, int, error) {
 	cb(fmt.Sprintf("Symbol table length: %08X", symbolTableLength))
 
 	if symbolTableLength > 0x1000 && symbolNameTableOffset > 0 && symbolNameTableOffset < 0x70000 {
-		//compressedSymbolTable := data[symbolNameTableOffset : symbolNameTableOffset+symbolTableLength]
+		// compressedSymbolTable := data[symbolNameTableOffset : symbolNameTableOffset+symbolTableLength]
 		return true, addressTableOffset, symbolNameTableOffset, symbolTableLength, nil
 	}
 	return false, addressTableOffset, symbolNameTableOffset, symbolTableLength, ErrSymbolTableNotFound
@@ -440,7 +437,7 @@ func isBinaryPackedVersion(data []byte, filelength int) bool {
 	if err != nil {
 		panic(err)
 	}
-	//log.Printf("Length: %d, Retval: %X, Val: %X", length, retval, val)
+	// log.Printf("Length: %d, Retval: %X, Val: %X", length, retval, val)
 	if retval > 0 && length < filelength && length > 0 {
 		return true
 	}
@@ -455,7 +452,7 @@ func GetT7HeaderField(bin []byte, id byte) ([]byte, error) {
 	for addr > (binLength - 0x1FF) {
 		/* The first byte is the length of the data */
 		fieldLength := bin[addr]
-		//log.Printf("%3d, %x", lengthField, lengthField)
+		// log.Printf("%3d, %x", lengthField, lengthField)
 		if fieldLength == 0x00 || fieldLength == 0xFF {
 			break
 		}
@@ -468,14 +465,14 @@ func GetT7HeaderField(bin []byte, id byte) ([]byte, error) {
 		if fieldID == id {
 			answer = make([]byte, int(fieldLength))
 			answer[fieldLength-1] = 0x00
-			//answer[fieldLength] = 0x00
+			// answer[fieldLength] = 0x00
 			for i := 0; i < int(fieldLength); i++ {
 				answer[i] = bin[addr]
 				addr--
 			}
 			//			log.Printf("0x%02x %d> %q", fieldID, len(answer), string(answer))
 			found = true
-			//break
+			// break
 			// when this return is commented out, the function will
 			// find the last field if there are several (mainly this
 			// is for searching for the last VIN field)
@@ -500,7 +497,7 @@ func GetAllT7HeaderFields(bin []byte) []*T7HeaderField {
 		/* The first byte is the length of the data */
 		fieldLength := bin[addr]
 		//		log.Printf("fieldLength %X", fieldLength)
-		//log.Printf("%3d, %x", lengthField, lengthField)
+		// log.Printf("%3d, %x", lengthField, lengthField)
 		if fieldLength == 0x00 || fieldLength == 0xFF {
 			break
 		}

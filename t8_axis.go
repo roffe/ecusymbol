@@ -45,7 +45,7 @@ var axisT8 = AxisInformation{
 		"BstKnkCal.fi_offsetXSP", //BioPower
 		"BstKnkCal.n_EngYSP",
 		"BstKnkCal.MaxAirmass",
-		"° ignition retard (Ioff)",
+		"ignition retard (Ioff)",
 		"rpm",
 		"mg/c",
 		"IgnMastProt.fi_Offset",
@@ -55,7 +55,7 @@ var axisT8 = AxisInformation{
 		"BstKnkCal.fi_offsetXSP", //BioPower
 		"BstKnkCal.n_EngYSP",
 		"BstKnkCal.MaxAirmassAu",
-		"° ignition retard (Ioff)",
+		"ignition retard (Ioff)",
 		"rpm",
 		"mg/c",
 		"IgnMastProt.fi_Offset",

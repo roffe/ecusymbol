@@ -30,6 +30,7 @@ var correctionFactors = map[string]float64{
 	"BoostCal.RegMap":                   0.1,
 	"DisplProt.LambdaScanner":           0.01,
 	"LambdaScan.LambdaScanner":          0.01,
+	"LambdaScan.LambdaScanner2":         0.01,
 	"ECMStat.p_Diff":                    0.001,
 	"ECMStat.p_DiffThrot":               0.001,
 	"IgnAbsCal.fi_NormalMAP":            0.1,
@@ -83,7 +84,7 @@ var correctionFactors = map[string]float64{
 	"AirCtrlCal.q_AirInletSP":                0.01,
 	"AirCtrlCal.PRatioMaxTab":                0.01,
 	"TMCProt.Trq_TcsTcmMinLim":               0.1,
-	//T5
+	// T5
 	// "Reg_kon_mat"))
 	// {
 	// 	if (GetSymbolLength(symbolname) == 0x80)
@@ -95,7 +96,7 @@ var correctionFactors = map[string]float64{
 	// 		returnvalue = 0.1;
 	// 	}
 	// }
-	"Accel_konst!":          0.00390625,   //returnvalue = 0.0078125, // 1/12,
+	"Accel_konst!":          0.00390625,   // returnvalue = 0.0078125, // 1/12,
 	"Adapt_inj_imat!":       0.001953125,  // 1/51,
 	"Adapt_injfaktor_high!": 0.001953125,  // 1/51,
 	"Adapt_injfaktor_low!":  0.001953125,  // 1/51,
@@ -118,7 +119,7 @@ var correctionFactors = map[string]float64{
 	"Diag_speed_load!":      0.01,
 	"Diag_speed_rpm!":       10,
 	"Eftersta_fak!":         0.0078125,   // 0.01,
-	"Eftersta_fak2!":        0.0078125,   //0.01,
+	"Eftersta_fak2!":        0.0078125,   // 0.01,
 	"Fload_tab!":            0.001953125, // 1/51,
 	//"Fuel_knock_mat!":         0.00390625,  // 1/25,
 	"Fuel_map_xaxis!": 0.01,
@@ -207,7 +208,7 @@ var correctionFactors = map[string]float64{
 	"Ret_fuel_fak!":                                 0.0009765625, // 128/25,
 	"Ret_fuel_tab!":                                 0.0009765625, // 128/25,
 	"Ret_up_rpm!":                                   10,
-	"Retard_konst!":                                 0.00390625, //returnvalue = 0.0078125, // 1/12,
+	"Retard_konst!":                                 0.00390625, // returnvalue = 0.0078125, // 1/12,
 	"Rpm_dif!":                                      10,
 	"Rpm_max!":                                      10,
 	"Rpm_perf_max!":                                 10,

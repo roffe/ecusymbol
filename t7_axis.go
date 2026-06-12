@@ -3311,7 +3311,7 @@ var axisT7 = AxisInformation{
 		"rpm",
 		"Nm",
 		"",
-		"",
+		"ActualIn.n_Engine",
 	},
 	"TorqueCal.M_EngMaxE85Tab": Axis{
 		"",
@@ -3319,9 +3319,9 @@ var axisT7 = AxisInformation{
 		"TorqueCal.M_EngMaxE85Tab",
 		"x-axis",
 		"rpm",
-		"z-axis",
+		"Nm",
 		"",
-		"",
+		"ActualIn.n_Engine",
 	},
 	"TorqueCal.M_EngMaxE85TabAut": Axis{
 		"",
@@ -3329,9 +3329,9 @@ var axisT7 = AxisInformation{
 		"TorqueCal.M_EngMaxE85TabAut",
 		"x-axis",
 		"rpm",
-		"z-axis",
+		"Nm",
 		"",
-		"",
+		"ActualIn.n_Engine",
 	},
 	"TorqueCal.M_EngMaxTab": Axis{
 		"",
@@ -3341,7 +3341,7 @@ var axisT7 = AxisInformation{
 		"rpm",
 		"Nm",
 		"",
-		"",
+		"ActualIn.n_Engine",
 	},
 	"TorqueCal.M_EngTempE85Ta": Axis{
 		"",

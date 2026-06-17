@@ -169,14 +169,15 @@ func (t7 *T7File) Save(filename string) error {
 		addr := sym.Address
 		if sym.Address > 0x7FFFFF {
 			if sym.Address-sym.SramOffset > uint32(len(t7.data)) {
-				return ErrAddressOutOfRange
+				log.Printf("Warning: symbol %s has address 0x%X which is out of range, skipping\n", sym.Name, sym.Address)
+				continue
 			}
 			addr = sym.Address - sym.SramOffset
 		}
 		for idx, b := range sym.data {
-			(t7.data)[addr+uint32(idx)] = b
+			t7.data[addr+uint32(idx)] = b
 		}
-		//copy(t7.data[addr:addr+uint32(len(sym.data))], sym.data)
+		// copy(t7.data[addr:addr+uint32(len(sym.data))], sym.data)
 
 	}
 
@@ -188,7 +189,7 @@ func (t7 *T7File) Save(filename string) error {
 		return err
 	}
 
-	err := os.WriteFile(filename, t7.data, 0644)
+	err := os.WriteFile(filename, t7.data, 0o644)
 	if err != nil {
 		return fmt.Errorf("failed to write %s : %w", filename, err)
 	}
@@ -207,7 +208,7 @@ func (t7 *T7File) Byte() ([]byte, error) {
 		for idx, b := range sym.data {
 			(t7.data)[addr+uint32(idx)] = b
 		}
-		//copy(t7.data[addr:addr+uint32(len(sym.data))], sym.data)
+		// copy(t7.data[addr:addr+uint32(len(sym.data))], sym.data)
 	}
 
 	if err := t7.UpdateChecksum(); err != nil {

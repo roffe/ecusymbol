@@ -3400,8 +3400,8 @@ var axisT7 = AxisInformation{
 		"mg/c",
 		"rpm",
 		"Nm",
-		"",
-		"",
+		"MAF.m_AirInlet",
+		"ActualIn.n_Engine",
 	},
 	"TorqueCal.M_OverBoostTab": Axis{
 		"",

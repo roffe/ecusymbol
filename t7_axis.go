@@ -3615,7 +3615,7 @@ var axisT7 = AxisInformation{
 	},
 	"TransCal.m_TriggMaxTab": Axis{
 		"",
-		"TransCal.DecTriggSP",
+		"",
 		"TransCal.m_TriggMaxTab",
 		"x-axis",
 		"y-axis",
@@ -3723,6 +3723,18 @@ var axisT7 = AxisInformation{
 		"",
 		"",
 	},
+	/*
+		"TransCal.FilterConstAir": Axis{
+			"",
+			"TransCal.n_FilterSP",
+			"TransCal.FilterConstAir",
+			"",
+			"rpm",
+			"",
+			"",
+			"",
+		},
+	*/
 }
 
 /*

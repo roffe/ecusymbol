@@ -62,6 +62,6 @@ func GetInfo(ecu ECUType, name string) Axis {
 			"",
 		}
 	}
-	//log.Println(axis)
+	// log.Println(axis)
 	return axis
 }

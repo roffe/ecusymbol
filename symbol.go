@@ -66,8 +66,14 @@ func (s *Symbol) SetData(data []byte) error {
 }
 
 func (s *Symbol) Read(r io.Reader) error {
-	s.data = make([]byte, s.Length)
-	n, err := r.Read(s.data)
+	// Reuse the backing buffer across frames; consumers read s.data
+	// synchronously before the next Read overwrites it.
+	if cap(s.data) < int(s.Length) {
+		s.data = make([]byte, s.Length)
+	} else {
+		s.data = s.data[:s.Length]
+	}
+	n, err := io.ReadFull(r, s.data)
 	if err != nil {
 		return err
 	}

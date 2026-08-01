@@ -41,7 +41,7 @@ func (t7 *T7File) VerifyChecksum() error {
 	}
 	t7.printFunc(fmt.Sprintf("Calculated F2 checksum: %X", calculatedF2Checksum))
 
-	calculatedFBChecksum, err := t7.calculateFBChecksum(0, t7.fwLength)
+	calculatedFBChecksum, err := t7.calculateFBChecksum(t7.bottomOfFlash, t7.topOfProgram-t7.bottomOfFlash)
 	if err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ func (t7 *T7File) UpdateChecksum() error {
 	}
 	t7.printFunc(fmt.Sprintf("Calculated F2 checksum: %X", calculatedF2Checksum))
 
-	calculatedFBChecksum, err := t7.calculateFBChecksum(0, t7.fwLength)
+	calculatedFBChecksum, err := t7.calculateFBChecksum(t7.bottomOfFlash, t7.topOfProgram-t7.bottomOfFlash)
 	if err != nil {
 		return err
 	}
@@ -279,7 +279,7 @@ func (t7 *T7File) calculateFBChecksum(start int, length int) (uint32, error) {
 }
 
 func (t7 *T7File) calculateF2Checksum() (uint32, error) {
-	if t7.fwLength > len(t7.data) {
+	if t7.topOfProgram > len(t7.data) {
 		return 0, errors.New("the start and length range exceeds the data slice length")
 	}
 
@@ -291,7 +291,7 @@ func (t7 *T7File) calculateF2Checksum() (uint32, error) {
 	var checksum uint32 = 0
 	var xorCount uint8 = 1
 
-	for count := 0; count < t7.fwLength && count < len(t7.data)-3; count += 4 {
+	for count := 0; count < t7.topOfProgram && count < len(t7.data)-3; count += 4 {
 		temp := binary.BigEndian.Uint32((t7.data)[count : count+4])
 		checksum += temp ^ xorTable[xorCount]
 		xorCount++

@@ -42,7 +42,7 @@ var axisT8 = AxisInformation{
 		"ActualIn.n_Engine",
 	},
 	"BstKnkCal.MaxAirmass": Axis{
-		"BstKnkCal.fi_offsetXSP", //BioPower
+		"BstKnkCal.fi_offsetXSP", // BioPower
 		"BstKnkCal.n_EngYSP",
 		"BstKnkCal.MaxAirmass",
 		"ignition retard (Ioff)",
@@ -52,7 +52,7 @@ var axisT8 = AxisInformation{
 		"ActualIn.n_Engine",
 	},
 	"BstKnkCal.MaxAirmassAu": Axis{
-		"BstKnkCal.fi_offsetXSP", //BioPower
+		"BstKnkCal.fi_offsetXSP", // BioPower
 		"BstKnkCal.n_EngYSP",
 		"BstKnkCal.MaxAirmassAu",
 		"ignition retard (Ioff)",
@@ -431,4 +431,17 @@ var axisT8 = AxisInformation{
 		XFrom:        "",
 		YFrom:        "",
 	},
+	"MAFCal.WeightConstMap": Axis{
+		X:            "MAFCal.n_EngineXSP",
+		Y:            "MAFCal.p_InletGradYSP",
+		Z:            "MAFCal.WeightConstMap",
+		XDescription: "RPM",
+		YDescription: "kPa",
+		ZDescription: "Weight",
+		XFrom:        "ActualIn.n_Engine",
+		YFrom:        "",
+	},
 }
+
+// Symbol	Description	X-axis	X-axis description	Y-axis	Y-axis description
+// MAFCal.WeightConstMap	Map for finding out weight constant	MAFCal.n_EngineXSP	Engine speed support points for weight coefficient matrix for calculation of MAF.m_AirInletFuel. RESOLUTION : 0.1 %	MAFCal.p_InletGradYSP	Inlet manifold pressure gradient support points for weight coefficient matrix for calculation of MAF.m_AirInletFuel. RESOLUTION : 1 kPa

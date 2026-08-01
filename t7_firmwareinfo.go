@@ -11,22 +11,17 @@ type T7FirmwareInfo struct {
 	ProgrammingDate    string
 	SIDDate            string
 
-	ChecksumEnabled       bool
-	CompressedSymboltable bool
-	NoSymboltablePresent  bool
+	// 0xF5-0xF8. These are the EOL security access seed/key words written by
+	// XEolprg.c from u16 security[4] -- not feature flags. The previous
+	// CompressedSymboltable/OpenSIDInfo/SecondLambdaSonde/... booleans tested
+	// these for values 1..10; across 386 production bins no such value ever
+	// occurs, so every one of them was permanently false.
+	SecuritySeedL1 int
+	SecurityKeyL1  int
+	SecuritySeedL3 int
+	SecurityKeyL3  int
 
-	OpenSIDInfo               bool
-	SecondLambdaSonde         bool
-	FastThrottleResponse      bool
-	TorqueLimiters            bool
-	OBDIIFunctions            bool
-	ExtraFastThrottleResponse bool
-	CatalystLightOff          bool
-	BioPowerEnabled           bool
-	DisableEmissionLimiting   bool
-
-	DisableStartscreen       bool
-	DisableAdaptationMessage bool
+	BioPowerEnabled bool
 }
 
 func (t7 *T7File) GetInfo() T7FirmwareInfo {
@@ -42,29 +37,20 @@ func (t7 *T7File) GetInfo() T7FirmwareInfo {
 	return T7FirmwareInfo{
 		SoftwareVersion: t7.softwareVersion,
 		ChassisID:       t7.chassisID,
-		EngineType:      t7.carDescription,
-		Partnumber:      t7.partNumber,
+		EngineType:      t7.engineType, // 0x97
+		Partnumber:      t7.ecuSoftwNr,
 		ImmobilizerCode: t7.immobilizerID,
 
-		OriginalCarType:           t7.carDescription,
-		OriginalEngineType:        t7.engineType,
-		ProgrammingDate:           t7.dateModified,
-		SIDDate:                   t7.dateModified,
-		ChecksumEnabled:           t7.romChecksumType == 2,
-		CompressedSymboltable:     t7.valueF5 == 1,
-		NoSymboltablePresent:      t7.valueF6 == 1,
-		OpenSIDInfo:               t7.valueF7 == 1,
-		SecondLambdaSonde:         t7.valueF8 == 1,
-		FastThrottleResponse:      t7.valueF8 == 2,
-		TorqueLimiters:            t7.valueF8 == 3,
-		OBDIIFunctions:            t7.valueF8 == 4,
-		ExtraFastThrottleResponse: t7.valueF8 == 5,
-		CatalystLightOff:          t7.valueF8 == 6,
+		OriginalCarType:    t7.engineType,
+		OriginalEngineType: t7.engineType, // was 0x98, which is the tester serial number
+		ProgrammingDate:    t7.softwareDate,
+		SIDDate:            t7.softwareDate,
+
+		SecuritySeedL1: t7.securitySeedL1,
+		SecurityKeyL1:  t7.securityKeyL1,
+		SecuritySeedL3: t7.securitySeedL3,
+		SecurityKeyL3:  t7.securityKeyL3,
 
 		BioPowerEnabled: isBioPower(),
-
-		DisableEmissionLimiting:  t7.valueF8 == 8,
-		DisableStartscreen:       t7.valueF8 == 9,
-		DisableAdaptationMessage: t7.valueF8 == 10,
 	}
 }

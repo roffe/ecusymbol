@@ -27,32 +27,43 @@ type T7File struct {
 	f2ChecksumDetected          bool
 	chassisIDCounter            int
 
-	symbolTableAddress int
-	sramOffset         int
-	checksumF2         int
-	checksumFB         int
+	symbolTableAddress int // 0x9B, little-endian (linker field, ECU never reads it)
+	sramOffset         int // 0x9C, little-endian (ditto)
+	checksumF2         int // 0xF2 PIAreaChecksum
+	checksumFB         int // 0xFB ROMchecksum
 
-	bottomOfFlash   int
-	romChecksumType int
-	fwLength        int
+	topOfFlash    int // 0xFC TopOffFlash   (0x0007FFFF)
+	bottomOfFlash int // 0xFD BottomOffFlash, checksum start address
+	topOfProgram  int // 0xFE TopOffProgram, checksum end address
 
-	valueF5          int
-	valueF6          int
-	valueF7          int
-	valueF8          int
-	romChecksumError byte
+	// 0xF5-0xF8 hold the EOL security access seed/key words, not feature flags.
+	// XEolprg.c: writePIArea(0xF8, 2, (u8*)(&security[0])) ... security[3] -> 0xF5.
+	securitySeedL1 int // 0xF8
+	securityKeyL1  int // 0xF7
+	securitySeedL3 int // 0xF6
+	securityKeyL3  int // 0xF5
 
-	chassisID       string
-	immobilizerID   string
-	softwareVersion string
-	carDescription  string
-	partNumber      string
-	engineType      string
-	vehicleIDNr     string
-	dateModified    string
-	ecuHardwareNr   string
-	testserialnr    string
-	lastModifiedBy  []byte
+	romChecksumError byte // 0xF9 EOLProgOK
+
+	chassisID       string // 0x90 VIN
+	partNrAlphaCode string // 0x91
+	immobilizerID   string // 0x92 ECUHardwNr
+	ecuHardwVersNr  string // 0x93
+	ecuSoftwNr      string // 0x94
+	softwareVersion string // 0x95 ECUSoftwVersNr
+	engineType      string // 0x97
+	testerSerialNr  string // 0x98
+	softwareDate    string // 0x99 "YYMMDD"
+	ecuDiagDataID   string // 0x9A
+	traceability    []byte // 0xFA production traceability; byte 0 is the HW revision letter
+
+	// Footer fields we do not model, kept verbatim so createPiArea can put them
+	// back (0xF3/0xF4 = OBD-II worst-case/history data).
+	otherFields []*T7HeaderField
+
+	// Raw footer set by SetPIArea. When non-nil it replaces the modelled
+	// footer layout entirely, so removed fields stay removed.
+	piArea []*T7HeaderField
 
 	csumArea [16]T7ChecksumArea
 
@@ -89,15 +100,15 @@ func NewT7File(data []byte, opts ...T7FileOpt) (*T7File, error) {
 		data:            data,
 		chassisID:       "00000000000000000",
 		immobilizerID:   "000000000000000",
-		engineType:      "0000000000000",
-		vehicleIDNr:     "000000000",
-		partNumber:      "0000000",
+		testerSerialNr:  "0000000000000",
+		partNrAlphaCode: "000000000",
+		ecuSoftwNr:      "0000000",
 		softwareVersion: "000000000000",
-		carDescription:  "00000000000000000000",
-		dateModified:    "0000",
-		ecuHardwareNr:   "0000000",
-		lastModifiedBy:  []byte{0x42, 0xFB, 0xFA, 0xFF, 0xFF},
-		testserialnr:    "050225",
+		engineType:      "00000000000000000000",
+		ecuDiagDataID:   "0000",
+		ecuHardwVersNr:  "0000000",
+		traceability:    []byte{0x42, 0xFB, 0xFA, 0xFF, 0xFF}, // 0x42 = 'B' hardware revision
+		softwareDate:    "050225",
 		printFunc: func(str string) {
 			log.Println(str)
 		},

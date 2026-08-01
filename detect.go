@@ -37,7 +37,7 @@ func IsTrionic5File(data []byte) error {
 	if len(data) != LengthT55 {
 		return ErrInvalidLength
 	}
-	//return fileHasPrefix(file, T5MagicBytes)
+	// return fileHasPrefix(file, T5MagicBytes)
 	return nil
 }
 

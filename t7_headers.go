@@ -32,27 +32,35 @@ func (h *T7HeaderField) String() string {
 	}
 }
 
-func (h *T7HeaderField) Int16() int {
+// Data is in ECU read order: GetHeaders walks the footer downward, so Data[0] is
+// the byte immediately below the id. Every field the firmware itself reads is
+// big-endian in that order -- CopyECUID/readPIArea copy it with *ptr2++ = *ptr--
+// into a u16/u32 on a big-endian 68332. (Ecu_id.c's "set pointer to low byte"
+// comment is wrong for 68k.) 0x9B and 0x9C are the exception: the ECU never
+// reads them, they are emitted by the linker for tooling and are little-endian.
+//
+// Short data returns 0 rather than panicking; a corrupt footer is untrusted input.
+
+func (h *T7HeaderField) BE16() int {
 	if len(h.Data) < 2 {
-		panic("data should have at least 2 bytes")
+		return 0
 	}
-	return int(binary.LittleEndian.Uint16(h.Data))
+	return int(binary.BigEndian.Uint16(h.Data))
 }
 
-func (h *T7HeaderField) Int32() int {
+func (h *T7HeaderField) BE32() int {
 	if len(h.Data) < 4 {
-		panic("data should have at least 4 bytes")
+		return 0
 	}
-
-	return int(binary.LittleEndian.Uint32(h.Data))
-}
-
-func (h *T7HeaderField) Uint32() int {
-	if len(h.Data) < 4 {
-		panic("data should have at least 4 bytes")
-	}
-
 	return int(binary.BigEndian.Uint32(h.Data))
+}
+
+// LE32 is only correct for 0x9B and 0x9C.
+func (h *T7HeaderField) LE32() int {
+	if len(h.Data) < 4 {
+		return 0
+	}
+	return int(binary.LittleEndian.Uint32(h.Data))
 }
 
 func (t7 *T7File) loadHeaders() {
@@ -63,54 +71,61 @@ func (t7 *T7File) loadHeaders() {
 			t7.chassisIDDetected = true
 			t7.chassisIDCounter++
 		case 0x91:
-			t7.vehicleIDNr = h.String()
+			t7.partNrAlphaCode = h.String()
 		case 0x92:
 			t7.immobilizerID = h.String()
 			t7.immocodeDetected = true
 		case 0x93:
-			t7.ecuHardwareNr = h.String()
+			t7.ecuHardwVersNr = h.String()
 		case 0x94:
-			t7.partNumber = h.String()
+			t7.ecuSoftwNr = h.String()
 		case 0x95:
 			t7.softwareVersion = h.String()
 		case 0x97:
-			t7.carDescription = h.String()
-		case 0x98:
 			t7.engineType = h.String()
+		case 0x98:
+			t7.testerSerialNr = h.String()
 		case 0x99:
-			t7.testserialnr = h.String()
+			t7.softwareDate = h.String()
 		case 0x9A:
-			t7.dateModified = h.String()
+			t7.ecuDiagDataID = h.String()
 		case 0x9B:
-			t7.symbolTableAddress = h.Int32()
+			t7.symbolTableAddress = h.LE32()
 			t7.symbolTableMarkerDetected = true
 		case 0x9C:
-			t7.sramOffset = h.Int32()
-			//log.Printf("sramOffset: %X", t7.sramOffset)
+			t7.sramOffset = h.LE32()
 			t7.symbolTableChecksumDetected = true
 		case 0xF2:
-			t7.checksumF2 = h.Int32()
+			t7.checksumF2 = h.BE32()
 			t7.f2ChecksumDetected = true
 		case 0xF5:
-			t7.valueF5 = h.Int16()
+			t7.securityKeyL3 = h.BE16()
 		case 0xF6:
-			t7.valueF6 = h.Int16()
+			t7.securitySeedL3 = h.BE16()
 		case 0xF7:
-			t7.valueF7 = h.Int16()
+			t7.securityKeyL1 = h.BE16()
 		case 0xF8:
-			t7.valueF8 = h.Int16()
+			t7.securitySeedL1 = h.BE16()
 		case 0xF9:
-			t7.romChecksumError = h.Data[0]
+			if len(h.Data) > 0 {
+				t7.romChecksumError = h.Data[0]
+			}
 		case 0xFA:
-			t7.lastModifiedBy = h.Data
+			t7.traceability = h.Data
 		case 0xFB:
-			t7.checksumFB = h.Int32()
+			t7.checksumFB = h.BE32()
 		case 0xFC:
-			t7.bottomOfFlash = h.Int32()
+			t7.topOfFlash = h.BE32()
 		case 0xFD:
-			t7.romChecksumType = h.Int32()
+			t7.bottomOfFlash = h.BE32()
 		case 0xFE:
-			t7.fwLength = h.Uint32()
+			t7.topOfProgram = h.BE32()
+		default:
+			// Anything we do not model is kept verbatim and re-emitted by
+			// createPiArea. 0xF3/0xF4 (OBDWorstCaseType/OBDHistCountType) are
+			// real firmware fields carrying OBD-II history across a reflash;
+			// dropping them wipes the ECU's readiness data.
+			t7.otherFields = append(t7.otherFields, h)
 		}
 	}
 	if (t7.chassisIDCounter > 1 || !t7.immocodeDetected || !t7.chassisIDDetected) && t7.autoFixFooter {

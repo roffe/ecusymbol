@@ -183,7 +183,7 @@ func (t5 *T5File) Save(filename string) error {
 	if err := t5.UpdateChecksum(); err != nil {
 		return err
 	}
-	return os.WriteFile(filename, t5.data, 0644)
+	return os.WriteFile(filename, t5.data, 0o644)
 }
 
 func (t5 *T5File) Byte() ([]byte, error) {
@@ -253,7 +253,6 @@ func readEndMarker(data []byte, marker byte) (int, error) {
 }
 
 func (t5 *T5File) parseData() error {
-
 	var symbols []*Symbol
 
 	var state int = -10
@@ -360,6 +359,11 @@ outer:
 	if err != nil {
 		return err
 	}
+	//f, err := os.Create("symbols.txt")
+	//if err != nil {
+	//	log.Println(err)
+	//}
+	//defer f.Close()
 	for _, sym := range symbols {
 		if alt, ok := alh[sym.SramOffset]; ok {
 			sym.Address = alt.FlashAddress
@@ -367,10 +371,10 @@ outer:
 			alh[sym.SramOffset] = alt
 		}
 		if sym.Address == 0 {
-			//log.Println(sym.Name, "has no address")
+			// log.Println(sym.Name, "has no address")
 			continue
 		}
-		//log.Printf("SRAM: %X, ADDR: %X, LEN: %d N: %s", sym.SramOffset, sym.Address, sym.Length, sym.Name)
+		// fmt.Fprintf(f, "SRAM: %X, ADDR: %X, LEN: %d NAME: %s\n", sym.SramOffset, sym.Address, sym.Length, sym.Name)
 		sym.data = make([]byte, sym.Length)
 		if err := binary.Read(bytes.NewReader(t5.data[sym.Address:sym.Address+uint32(sym.Length)]), binary.BigEndian, sym.data); err != nil {
 			return err
@@ -615,7 +619,7 @@ func (t5 *T5File) readAddressLookupTable(numberOfSymbols int) (map[uint32]addres
 		}
 		binPos += 4
 
-		//log.Printf("flashAddress: 0x%08X\n", flashAddress)
+		// log.Printf("flashAddress: 0x%08X\n", flashAddress)
 
 		// 8x dummy bytes
 		dummy := make([]byte, 8)

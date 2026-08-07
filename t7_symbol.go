@@ -203,7 +203,18 @@ func binaryPacked(data []byte, cb func(string)) (*Collection, error) {
 		if data[pos] == 0x53 && data[pos+1] == 0x43 { // SC
 			break
 		}
-		symbols = append(symbols, NewSymbolFromT7Bytes(data[pos:pos+10], symb_count))
+		sym := NewSymbolFromT7Bytes(data[pos:pos+10], symb_count)
+		// Tuners zero the address of protected maps to hide them.
+		// The address table is contiguous, so the real address is prev+prev.Length.
+		// Same repair T7Suite does in Trionic7File.tryToDecodePackedBinary.
+		if sym.Address == 0 && sym.Length > 0 && len(symbols) > 0 {
+			prev := symbols[len(symbols)-1]
+			sym.Address = prev.Address + uint32(prev.Length)
+			if sym.Length == 0x240 && sym.Address%2 != 0 {
+				sym.Address++
+			}
+		}
+		symbols = append(symbols, sym)
 		symb_count++
 	}
 	// log.Println("Symbols found: ", symb_count)
@@ -243,6 +254,8 @@ func binaryPacked(data []byte, cb func(string)) (*Collection, error) {
 				return nil, fmt.Errorf("could not determine version: %v", err)
 			}
 		}
+
+		log.Println("Detected version:", ver)
 
 		nameMap, err := xml2map(ver)
 		if err != nil {
@@ -349,6 +362,12 @@ func determineVersion(data []byte) (string, error) {
 		return "EU0CF01O", nil
 	case bytes.Contains(data, []byte("C10FA0UE")), bytes.Contains(data, []byte("EU0AF01C")), bytes.Contains(data, []byte("EU0BF01C")), bytes.Contains(data, []byte("EU0CF01C")):
 		return "EU0AF01C", nil
+	// EU09F01O shares an identical symbol table with EU09F01C, so it maps to the same XML.
+	// The footer stores the version reversed, hence C10F90UE / O10F90UE / T10F90UE.
+	case bytes.Contains(data, []byte("EU09F01C")), bytes.Contains(data, []byte("C10F90UE")),
+		bytes.Contains(data, []byte("EU09F01O")), bytes.Contains(data, []byte("O10F90UE")),
+		bytes.Contains(data, []byte("EU09F01T")), bytes.Contains(data, []byte("T10F90UE")):
+		return "EU09F01C", nil
 	}
 	return "", ErrVersionNotFound
 }

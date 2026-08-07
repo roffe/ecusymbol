@@ -13,6 +13,9 @@ var EU0AF01C_xml []byte
 //go:embed EU0AF01O.xml
 var EU0AF01O_xml []byte
 
+//go:embed EU09F01C.xml
+var EU09F01C_xml []byte
+
 type XMLSymbol struct {
 	Text         string `xml:",chardata"`
 	SYMBOLNAME   string `xml:"SYMBOLNAME"`
@@ -35,6 +38,7 @@ var xmlMap map[string][]byte = map[string][]byte{
 	"EU0BF01O": EU0AF01O_xml,
 	"EU0CF01O": EU0AF01O_xml,
 	"EU06Z44O": EU0AF01O_xml,
+	"EU09F01C": EU09F01C_xml,
 }
 
 func xml2map(name string) (map[int]string, error) {
@@ -50,7 +54,7 @@ func xml2map(name string) (map[int]string, error) {
 
 	results := make(map[int]string)
 	for _, s := range symbols.Symbols {
-		//fmt.Fprintf(f, "%d %s %s\n", s.SYMBOLNUMBER, s.DESCRIPTION, s.SYMBOLNAME)
+		// fmt.Fprintf(f, "%d %s %s\n", s.SYMBOLNUMBER, s.DESCRIPTION, s.SYMBOLNAME)
 		results[s.SYMBOLNUMBER] = s.DESCRIPTION
 	}
 	return results, nil

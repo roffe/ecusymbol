@@ -43,6 +43,23 @@ func NewSymbolFromT7Bytes(data []byte, symbol_number int) *Symbol {
 	}
 }
 
+// t7ForceUnsigned holds symbols whose type byte in the T7 symbol table claims
+// SIGNED but that the ECU actually reads as u16 (VIOS Qair_i.c declares
+// "u16 Q_AirInletTab[18]" and the stock calibration tops out at 34000).
+// Without this the top table entries show up negative.
+// ponytail: plain name list, extend it if another table turns up negative.
+var t7ForceUnsigned = map[string]bool{
+	"VIOSMAFCal.Q_AirInletTab":  true,
+	"VIOSMAFCal.Q_AirInletTab2": true,
+}
+
+// fixT7SymbolType clears bogus signedness flags, call after Name is set.
+func fixT7SymbolType(s *Symbol) {
+	if t7ForceUnsigned[s.Name] {
+		s.Type &^= SIGNED
+	}
+}
+
 func loadT7Symbols(data []byte, cb func(string)) (*Collection, error) {
 	//for _, h := range GetAllT7HeaderFields(data) {
 	//	switch h.ID {
@@ -140,6 +157,7 @@ outer:
 			Correctionfactor: GetCorrectionfactor(strings.TrimSpace(symbolNames[symb_count])),
 			Unit:             GetUnit(strings.TrimSpace(symbolNames[symb_count])),
 		}
+		fixT7SymbolType(sym)
 		if sym.Address < T7SRAMAddress {
 			data, err := readSymbolData(data, sym, 0)
 			if err == nil {
@@ -237,6 +255,7 @@ func binaryPacked(data []byte, cb func(string)) (*Collection, error) {
 			symbols[i].Name = strings.TrimSpace(symbolNames[i])
 			symbols[i].Unit = GetUnit(symbols[i].Name)
 			symbols[i].Correctionfactor = GetCorrectionfactor(symbols[i].Name)
+			fixT7SymbolType(symbols[i])
 		}
 		if err := readAllT7SymbolsData(data, symbols); err != nil {
 			return NewCollection(symbols...), err
@@ -266,6 +285,7 @@ func binaryPacked(data []byte, cb func(string)) (*Collection, error) {
 				symbols[i].Name = value
 				symbols[i].Unit = GetUnit(s.Name)
 				symbols[i].Correctionfactor = GetCorrectionfactor(symbols[i].Name)
+				fixT7SymbolType(symbols[i])
 			}
 		}
 	}

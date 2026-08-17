@@ -7,19 +7,6 @@ import (
 	"sync"
 )
 
-type SymbolCollection interface {
-	GetByName(name string) *Symbol
-	GetByNumber(number int) *Symbol
-	GetXYZ(xAxis, yAxis, zAxis string) ([]int, []int, []int, float64, float64, float64, error)
-	Symbols() []*Symbol
-	Dump() string
-	Count() int
-	Add(symbols ...*Symbol)
-	Save(filename string) error
-	Byte() ([]byte, error)
-	Version() string
-}
-
 type Collection struct {
 	symbols   []*Symbol
 	nameMap   map[string]*Symbol
@@ -42,12 +29,10 @@ func NewCollection(symbols ...*Symbol) *Collection {
 	return c
 }
 
+// Save fails: a Collection is an in-memory symbol set (read from a live ECU or
+// built in tests), it has no backing binary to write back to.
 func (c *Collection) Save(filename string) error {
-	return nil
-}
-
-func (c *Collection) Byte() ([]byte, error) {
-	return nil, nil
+	return ErrNotFileBacked
 }
 
 func (c *Collection) GetByName(name string) *Symbol {
@@ -99,7 +84,7 @@ func (c *Collection) Version() string {
 }
 
 func (c *Collection) GetXYZ(xAxis, yAxis, zAxis string) ([]int, []int, []int, float64, float64, float64, error) {
-	//log.Printf("GetXYZ(%s, %s, %s)", xAxis, yAxis, zAxis)
+	// log.Printf("GetXYZ(%s, %s, %s)", xAxis, yAxis, zAxis)
 	symx, symy, symz := c.GetByName(xAxis), c.GetByName(yAxis), c.GetByName(zAxis)
 	if symz == nil {
 		return nil, nil, nil, 0, 0, 0, fmt.Errorf("%s not found", zAxis)

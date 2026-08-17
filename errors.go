@@ -16,4 +16,5 @@ var (
 	ErrVersionNotFound            = errors.New("version not found")
 	ErrAddressOutOfRange          = errors.New("address out of range")
 	ErrInvalidFile                = errors.New("invalid file")
+	ErrNotFileBacked              = errors.New("symbols are not backed by a file")
 )

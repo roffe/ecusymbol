@@ -11,9 +11,10 @@ const (
 )
 
 var ecuMAP = map[ECUType]func(data []byte) error{
-	ECU_T5: IsTrionic5File,
-	ECU_T7: IsTrionic7File,
-	ECU_T8: IsTrionic8File,
+	ECU_T5:   IsTrionic5File,
+	ECU_T7:   IsTrionic7File,
+	ECU_T8:   IsTrionic8File,
+	ECU_AW55: IsAW55File,
 }
 
 func DetectType(data []byte) (ECUType, error) {

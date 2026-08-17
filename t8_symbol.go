@@ -76,7 +76,7 @@ func loadT8Symbols(fileBytes []byte, cb func(string)) (*Collection, error) {
 	}
 
 	for _, sym := range symbols {
-		//origAddress := sym.Address
+		// origAddress := sym.Address
 		var actAddress uint32
 		if sym.Address >= 0x100000 {
 			if sym.Type != 0xFF && sym.Type&0x22 == 0x02 {
@@ -104,15 +104,15 @@ func loadT8Symbols(fileBytes []byte, cb func(string)) (*Collection, error) {
 				}
 			}
 		}
-		//sym.Name = names[i+1]
-		//sym.Unit = GetUnit(sym.Name)
-		//sym.Correctionfactor = GetCorrectionfactor(sym.Name)
+		// sym.Name = names[i+1]
+		// sym.Unit = GetUnit(sym.Name)
+		// sym.Correctionfactor = GetCorrectionfactor(sym.Name)
 
 		extractT8SymbolData(sym, fileBytes)
-		//sym.Address = origAddress
-		//d := extractT8SymbolData2(fileBytes, actAddress, sym.Length)
-		//log.Printf("1> % X", d)
-		//log.Printf("2> % X", sym.data)
+		// sym.Address = origAddress
+		// d := extractT8SymbolData2(fileBytes, actAddress, sym.Length)
+		// log.Printf("1> % X", d)
+		// log.Printf("2> % X", sym.data)
 	}
 
 	cb(fmt.Sprintf("End Of Symbol Table: 0x%X", addrtaboffset))
@@ -121,7 +121,7 @@ func loadT8Symbols(fileBytes []byte, cb func(string)) (*Collection, error) {
 	cb(fmt.Sprintf("Symbol Table Length: 0x%X", symbtablength))
 	cb(fmt.Sprintf("Real Address Table Offset: 0x%X", addressTableOffset))
 
-	//log.Println("Symbols found: ", symb_count)
+	// log.Println("Symbols found: ", symb_count)
 	cb(fmt.Sprintf("Loaded %d symbols from binary", len(symbols)))
 
 	return syms, nil
@@ -161,7 +161,7 @@ func loadT8Symbols(fileBytes []byte, cb func(string)) (*Collection, error) {
    }
 */
 
-func determineBinaryOpenness(data []byte, c SymbolCollection) bool {
+func determineBinaryOpenness(data []byte, c *Collection) bool {
 	const minRequiredLevel = 2
 	level := 0
 	if determineOpen_FromSymbolNames(c) {
@@ -178,13 +178,12 @@ func determineBinaryOpenness(data []byte, c SymbolCollection) bool {
 	} else {
 		level++
 	}
-	//log.Println("Binary openness level:", level)
+	// log.Println("Binary openness level:", level)
 	return level >= minRequiredLevel
 }
 
-func determineOpen_FromSymbolNames(symbols SymbolCollection) bool {
+func determineOpen_FromSymbolNames(symbols *Collection) bool {
 	for _, sh := range symbols.Symbols() {
-
 		if sh.Address >= T8Length && sh.Length > 0x100 && sh.Length <= 0x400 {
 			if sh.Name == "BFuelCal.LambdaOneFacMap" || sh.Name == "KnkFuelCal.fi_MaxOffsetMap" ||
 				sh.Name == "AirCtrlCal.RegMap" {
@@ -195,7 +194,7 @@ func determineOpen_FromSymbolNames(symbols SymbolCollection) bool {
 	return false
 }
 
-func determineOpen_FromSymbolAddress(symbols SymbolCollection) bool {
+func determineOpen_FromSymbolAddress(symbols *Collection) bool {
 	for _, sh := range symbols.Symbols() {
 		if sh.Address >= (0x100000 + 32768) {
 			return true
@@ -224,7 +223,7 @@ func determineOpen_FromData(data []byte) bool {
 
 func extractT8SymbolData(sym *Symbol, data []byte) {
 	if sym.Address < 0x020000 || sym.Address+uint32(sym.Length) > uint32(len(data)) {
-		//log.Printf("Symbol %s out of range: 0x%X - 0x%X\n", sym.Name, sym.Address, sym.Address+uint32(sym.Length))
+		// log.Printf("Symbol %s out of range: 0x%X - 0x%X\n", sym.Name, sym.Address, sym.Address+uint32(sym.Length))
 		return
 	}
 	sym.data = data[sym.Address : sym.Address+uint32(sym.Length)]
@@ -252,7 +251,7 @@ func ReadAddressTable(data []byte, offset int) ([]*Symbol, error) {
 			break
 		}
 		if symboldata[9] != 0x00 {
-			//log.Printf("End of table found at 0x%X\n", pos)
+			// log.Printf("End of table found at 0x%X\n", pos)
 			break
 		} else {
 			sym := &Symbol{

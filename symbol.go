@@ -25,7 +25,7 @@ type Symbol struct {
 	Unit             string `json:",omitempty"`
 }
 
-func Load(filename string, data []byte, printFunc func(string)) (ECUType, SymbolCollection, error) {
+func Load(filename string, data []byte, printFunc func(string)) (ECUType, FirmwareFile, error) {
 	ecuType, err := DetectType(data)
 	if err != nil {
 		return ECU_UNKNOWN, nil, err
@@ -52,6 +52,9 @@ func Load(filename string, data []byte, printFunc func(string)) (ECUType, Symbol
 			WithT8PrintFunc(printFunc),
 		)
 		return ECU_T8, sym, err
+	case ECU_AW55:
+		sym, err := NewAW55File(data, printFunc)
+		return ECU_AW55, sym, err
 	default:
 		return -1, nil, fmt.Errorf("unknown file format: %s", filename)
 	}
@@ -362,8 +365,8 @@ func (s *Symbol) BytesToInts(data []byte) []int {
 }
 
 func (s *Symbol) EncodeInt(input int) []byte {
-	//signed := s.Type&SIGNED == SIGNED
-	//konst := s.Type&KONST == KONST
+	// signed := s.Type&SIGNED == SIGNED
+	// konst := s.Type&KONST == KONST
 	char := s.Type&CHAR == CHAR
 	long := s.Type&LONG == LONG
 	switch {
@@ -380,13 +383,13 @@ func (s *Symbol) EncodeInt(input int) []byte {
 
 func (s *Symbol) EncodeFloat64(v float64) []byte {
 	newValue := int(math.Round((v - T5Offsets[s.Name]) / s.Correctionfactor))
-	//log.Printf("(%f - %f) / %f = %d", v, T5Offsets[s.Name], s.Correctionfactor, newValue)
+	// log.Printf("(%f - %f) / %f = %d", v, T5Offsets[s.Name], s.Correctionfactor, newValue)
 	return s.EncodeInt(newValue)
 }
 
 func (s *Symbol) EncodeInts(input []int) []byte {
-	//signed := s.Type&SIGNED == SIGNED
-	//konst := s.Type&KONST == KONST
+	// signed := s.Type&SIGNED == SIGNED
+	// konst := s.Type&KONST == KONST
 	char := s.Type&CHAR == CHAR
 	long := s.Type&LONG == LONG
 	buf := bytes.NewBuffer(nil)
@@ -415,32 +418,32 @@ func (s *Symbol) EncodeFloat64s(input []float64) []byte {
 
 func (s *Symbol) Ints() []int {
 	signed := s.Type&SIGNED == SIGNED
-	//konst := s.Type&KONST == KONST
+	// konst := s.Type&KONST == KONST
 	char := s.Type&CHAR == CHAR
 	long := s.Type&LONG == LONG
-	//log.Printf("Ints From Data %s signed: %t konst: %t char: %t long: %t len: %d: type %X", s.Name, signed, konst, char, long, s.Length, s.Type)
+	// log.Printf("Ints From Data %s signed: %t konst: %t char: %t long: %t len: %d: type %X", s.Name, signed, konst, char, long, s.Length, s.Type)
 
 	switch {
 	case char && !signed:
-		//log.Println("uint8")
+		// log.Println("uint8")
 		return s.Uint8s()
 	case char && signed:
-		//log.Println("int8")
+		// log.Println("int8")
 		return s.Int8s()
 	case !char && !long && !signed:
-		//log.Println("uint16")
+		// log.Println("uint16")
 		return s.Uint16s()
 	case !char && !long && signed:
-		//log.Println("int16")
+		// log.Println("int16")
 		return s.Int16s()
 	case !char && long && !signed:
-		//log.Println("uint32")
+		// log.Println("uint32")
 		return s.Uint32s()
 	case !char && long && signed:
-		//log.Println("int32")
+		// log.Println("int32")
 		return s.Int32s()
 	}
-	//log.Println("xint16")
+	// log.Println("xint16")
 	return s.Int16s()
 }
 

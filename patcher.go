@@ -15,7 +15,7 @@ type Patch struct {
 	Operations []Operation
 }
 
-func (p *Patch) Apply(sc SymbolCollection) error {
+func (p *Patch) Apply(sc FirmwareFile) error {
 	for _, op := range p.Operations {
 		if err := op.Apply(sc); err != nil {
 			return err
@@ -25,7 +25,7 @@ func (p *Patch) Apply(sc SymbolCollection) error {
 }
 
 type Operation interface {
-	Apply(SymbolCollection) error
+	Apply(FirmwareFile) error
 }
 
 func ReadTuningPackageFile(filename string) (*Patch, error) {
@@ -100,11 +100,9 @@ func ReadTuningPackage(data []byte) (*Patch, error) {
 	}, nil
 }
 
-type Binaction struct {
-}
+type Binaction struct{}
 
-type SearchReplace struct {
-}
+type SearchReplace struct{}
 
 type SymbolUpdate struct {
 	SymbolName string
@@ -112,7 +110,7 @@ type SymbolUpdate struct {
 	Data       []byte
 }
 
-func (su *SymbolUpdate) Apply(sc SymbolCollection) error {
+func (su *SymbolUpdate) Apply(sc FirmwareFile) error {
 	sym := sc.GetByName(su.SymbolName)
 	if sym == nil {
 		return fmt.Errorf("symbol %s not found", su.SymbolName)

@@ -16,6 +16,27 @@ var EU0AF01O_xml []byte
 //go:embed EU09F01C.xml
 var EU09F01C_xml []byte
 
+// EU06 trace (4603 symbols): names aligned from EU09F01C by address-table
+// signature and confirmed against EU0AF01C/EU0CF01C calibration data.
+//
+//go:embed EU06F01C.xml
+var EU06F01C_xml []byte
+
+//go:embed EI03F01C.xml
+var EI03F01C_xml []byte
+
+//go:embed EU04F01C.xml
+var EU04F01C_xml []byte
+
+//go:embed EU03F01C.xml
+var EU03F01C_xml []byte
+
+//go:embed ET07F02C.xml
+var ET07F02C_xml []byte
+
+//go:embed ET06F01C.xml
+var ET06F01C_xml []byte
+
 type XMLSymbol struct {
 	Text         string `xml:",chardata"`
 	SYMBOLNAME   string `xml:"SYMBOLNAME"`
@@ -37,7 +58,12 @@ var xmlMap map[string][]byte = map[string][]byte{
 	"EU0AF01O": EU0AF01O_xml,
 	"EU0BF01O": EU0AF01O_xml,
 	"EU0CF01O": EU0AF01O_xml,
-	"EU06Z44O": EU0AF01O_xml,
+	"EU06F01C": EU06F01C_xml,
+	"EI03F01C": EI03F01C_xml,
+	"EU04F01C": EU04F01C_xml,
+	"EU03F01C": EU03F01C_xml,
+	"ET07F02C": ET07F02C_xml,
+	"ET06F01C": ET06F01C_xml,
 	"EU09F01C": EU09F01C_xml,
 }
 

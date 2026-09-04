@@ -297,53 +297,41 @@ func binaryPacked(data []byte, cb func(string)) (*Collection, error) {
 	return NewCollection(symbols...), nil
 }
 
+// t7CalDelta returns the RAM->ROM offset of the calibration sections
+// (.STARTOF.(caldata)-.STARTOF.(calconst), see symhead2.h in the T7 source).
+// Header field 0x9C carries it; the 4 bytes after the "sYMBOLtABLE\0" marker
+// are the same value and serve as fallback.
+func t7CalDelta(fileBytes []byte) (uint32, error) {
+	if v, err := GetT7HeaderField(fileBytes, 0x9C); err == nil && len(v) == 4 {
+		return reverseInt(binary.BigEndian.Uint32(v)), nil
+	}
+	if m := bytes.Index(fileBytes, []byte("sYMBOLtABLE\x00")); m >= 0 && m+16 <= len(fileBytes) {
+		return binary.BigEndian.Uint32(fileBytes[m+12:]), nil
+	}
+	return 0, errors.New("t7: calibration RAM/ROM delta not found")
+}
+
 func readAllT7SymbolsData(fileBytes []byte, symbols []*Symbol) error {
-	dataLocationOffset := kmp.BytePatternSearch(fileBytes, searchPattern, 0x30000) - 10
-	dataOffsetValue := binary.BigEndian.Uint32(fileBytes[dataLocationOffset : dataLocationOffset+4])
-
-	//sram_offset, err := GetAddressFromOffset(fileBytes, dataLocationOffset+4)
-	//if err != nil {
-	//	return err
-	//}
-	/*
-		log.Printf("sram_offset: %X", sram_offset)
-		log.Printf("dataLocationOffsetRaw %X", fileBytes[dataLocationOffset:dataLocationOffset+4])
-		log.Printf("dataLocationOffset: %X", dataLocationOffset)
-		log.Printf("dataOffsetValue: %X", dataOffsetValue)
-	*/
-
-	c9value, err := GetT7HeaderField(fileBytes, 0x9C)
+	delta, err := t7CalDelta(fileBytes)
 	if err != nil {
 		return err
 	}
-
-	sramOffset := reverseInt(binary.BigEndian.Uint32(c9value))
-	//	log.Printf("sramOffset: %X", sramOffset)
-
 	for _, sym := range symbols {
-		sym.SramOffset = sramOffset
-		if sym.Address < T7SRAMAddress {
-			sym.data, err = readSymbolData(fileBytes, sym, 0)
-			if err != nil {
-				return err
+		sym.SramOffset = delta
+		off := sym.Address
+		if sym.Address >= T7SRAMAddress {
+			if sym.Address < delta {
+				// RAM below caldata (ivlan/EOL/diag vars, PLT_buffer): no flash image, live-only.
+				continue
 			}
-		} else {
-			if sym.Address-dataOffsetValue < uint32(len(fileBytes)) {
-				sym.data, err = readSymbolData(fileBytes, sym, dataOffsetValue)
-				if err != nil {
-					return err
-				}
-			} else if sym.Address-sramOffset < uint32(len(fileBytes)) {
-				sym.data, err = readSymbolData(fileBytes, sym, sramOffset)
-				if err != nil {
-					return err
-				}
-			} else {
-				log.Printf("symbol address out of range:%X %s", sym.Address-dataOffsetValue, sym.String())
-			}
+			off = sym.Address - delta
 		}
+		if end := uint64(off) + uint64(sym.Length); end > uint64(len(fileBytes)) {
+			log.Printf("symbol data outside file: %s", sym.String())
+			continue
+		}
+		sym.data = fileBytes[off : off+uint32(sym.Length)]
 	}
-
 	return nil
 }
 
@@ -378,9 +366,43 @@ func readSymbolData(file []byte, s *Symbol, offset uint32) ([]byte, error) {
 
 func determineVersion(data []byte) (string, error) {
 	switch {
-	case bytes.Contains(data, []byte("EU0CF01O")), bytes.Contains(data, []byte("EU06Z44O")), bytes.Contains(data, []byte("O44Z60UE")):
+	// The footer stores the version reversed (EU0CF01C -> C10FC0UE), so match both forms.
+	case bytes.Contains(data, []byte("EU0CF01O")), bytes.Contains(data, []byte("O10FC0UE")),
+		bytes.Contains(data, []byte("EU0BF01O")), bytes.Contains(data, []byte("O10FB0UE")),
+		bytes.Contains(data, []byte("EU0AF01O")), bytes.Contains(data, []byte("O10FA0UE")):
 		return "EU0CF01O", nil
-	case bytes.Contains(data, []byte("C10FA0UE")), bytes.Contains(data, []byte("EU0AF01C")), bytes.Contains(data, []byte("EU0BF01C")), bytes.Contains(data, []byte("EU0CF01C")):
+	// EU06 trace: F01C/Z44C/Z44O share one 4603-entry symbol table (EU0x has 4666).
+	case bytes.Contains(data, []byte("EU06F01C")), bytes.Contains(data, []byte("C10F60UE")),
+		bytes.Contains(data, []byte("EU06Z44C")), bytes.Contains(data, []byte("C44Z60UE")),
+		bytes.Contains(data, []byte("EU06Z44O")), bytes.Contains(data, []byte("O44Z60UE")):
+		return "EU06F01C", nil
+	// Recovered tables (see EU0xF01C.xml SOURCE/CONFIDENCE fields); one XML per trace.
+	case bytes.Contains(data, []byte("EI03F01C")),
+		bytes.Contains(data, []byte("C10F30IE")):
+		return "EI03F01C", nil
+	case bytes.Contains(data, []byte("EU04Z40O")),
+		bytes.Contains(data, []byte("O04Z40UE")),
+		bytes.Contains(data, []byte("EUO4Z40O")),
+		bytes.Contains(data, []byte("O04Z4OUE")):
+		return "EU04F01C", nil
+	case bytes.Contains(data, []byte("EU03Z36C")),
+		bytes.Contains(data, []byte("C63Z30UE")),
+		bytes.Contains(data, []byte("EU03Z36O")),
+		bytes.Contains(data, []byte("O63Z30UE")):
+		return "EU03F01C", nil
+	case bytes.Contains(data, []byte("ET07F02C")),
+		bytes.Contains(data, []byte("C20F70TE")),
+		bytes.Contains(data, []byte("EU02Z30O")),
+		bytes.Contains(data, []byte("O03Z20UE")),
+		bytes.Contains(data, []byte("EU02Z32O")),
+		bytes.Contains(data, []byte("O23Z20UE")):
+		return "ET07F02C", nil
+	case bytes.Contains(data, []byte("ET06F01C")),
+		bytes.Contains(data, []byte("C10F60TE")):
+		return "ET06F01C", nil
+	case bytes.Contains(data, []byte("EU0AF01C")), bytes.Contains(data, []byte("C10FA0UE")),
+		bytes.Contains(data, []byte("EU0BF01C")), bytes.Contains(data, []byte("C10FB0UE")),
+		bytes.Contains(data, []byte("EU0CF01C")), bytes.Contains(data, []byte("C10FC0UE")):
 		return "EU0AF01C", nil
 	// EU09F01O shares an identical symbol table with EU09F01C, so it maps to the same XML.
 	// The footer stores the version reversed, hence C10F90UE / O10F90UE / T10F90UE.
@@ -400,8 +422,9 @@ func GetT7Offsets(data []byte, cb func(string)) (bool, int, int, int, error) {
 	addressTableOffset := kmp.BytePatternSearch(data, searchPattern, 0x30000) - 0x06
 	cb(fmt.Sprintf("Address table offset: %08X", addressTableOffset))
 
-	sramTableOffset := getAddressFromOffset(data, addressTableOffset-0x04)
-	cb(fmt.Sprintf("SRAM table offset: %08X", sramTableOffset))
+	if delta, err := t7CalDelta(data); err == nil {
+		cb(fmt.Sprintf("Calibration RAM/ROM delta: %08X", delta))
+	}
 
 	symbolNameTableOffset := getAddressFromOffset(data, addressTableOffset)
 	//	log.Printf("Symbol table offset: %08X", symbolNameTableOffset)

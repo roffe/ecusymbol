@@ -75,10 +75,19 @@ func (t5 *T5File) init() (*T5File, error) {
 // and returns the 12 characters preceding the '$'. The byte immediately
 // after '$' encodes lock state (0x01 = locked, 0x00 = unlocked).
 func (t5 *T5File) findSoftwareVersion() string {
+	if i := t5.findSoftwareVersionEnd(); i > 0 {
+		return string(t5.data[i-12 : i])
+	}
+	return ""
+}
+
+// findSoftwareVersionEnd returns the index of the '$' terminating the
+// software ID, or -1.
+func (t5 *T5File) findSoftwareVersionEnd() int {
 	const startOffset = 0x1b00 // was 0x2000 for T5.5, 0x1b00 supports T5.2
 	n := len(t5.data)
 	if n <= startOffset+12 {
-		return ""
+		return -1
 	}
 	for i := startOffset; i < n; i++ {
 		if t5.data[i] != '$' || i < 12 {
@@ -88,10 +97,10 @@ func (t5 *T5File) findSoftwareVersion() string {
 			isT5Numeric(t5.data[i-3]) &&
 			isT5Numeric(t5.data[i-2]) &&
 			isT5Alpha(t5.data[i-1]) {
-			return string(t5.data[i-12 : i])
+			return i
 		}
 	}
-	return ""
+	return -1
 }
 
 func isT5Alpha(b byte) bool {

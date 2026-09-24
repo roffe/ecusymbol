@@ -200,6 +200,42 @@ outer:
 	return symCol, nil
 }
 
+// repairZeroedAddresses rebuilds the addresses tuners (MapTun) zero in the
+// address table to hide maps. Struct members are contiguous, so a zeroed entry
+// is prev.Address+prev.Length — the repair T7Suite does in
+// Trionic7File.tryToDecodePackedBinary. That fails for a struct's first member,
+// whose prev is the zero-length XxxCalType entry (or another zeroed member), so
+// what the forward pass can't resolve is derived backwards from the next member.
+// ponytail: a zeroed single-member struct has neither neighbour and stays 0.
+func repairZeroedAddresses(symbols []*Symbol) {
+	broken := make([]bool, len(symbols))
+	for i, s := range symbols {
+		broken[i] = s.Address == 0 && s.Length > 0
+	}
+	for i := 1; i < len(symbols); i++ {
+		prev, s := symbols[i-1], symbols[i]
+		if !broken[i] || broken[i-1] || prev.Length == 0 {
+			continue
+		}
+		s.Address = prev.Address + uint32(prev.Length)
+		if s.Length == 0x240 && s.Address%2 != 0 {
+			s.Address++
+		}
+		broken[i] = false
+	}
+	for i := len(symbols) - 2; i > 0; i-- {
+		next, s := symbols[i+1], symbols[i]
+		if !broken[i] || broken[i+1] || next.Length == 0 || next.Address < uint32(s.Length) {
+			continue
+		}
+		s.Address = next.Address - uint32(s.Length)
+		if symbols[i-1].Length == 0 && s.Address%2 != 0 { // first member: structs are word aligned
+			s.Address--
+		}
+		broken[i] = false
+	}
+}
+
 func binaryPacked(data []byte, cb func(string)) (*Collection, error) {
 	compressed, addressTableOffset, symbolNameTableOffset, symbolTableLength, err := GetT7Offsets(data, cb)
 	if err != nil && !errors.Is(err, ErrSymbolTableNotFound) {
@@ -222,19 +258,10 @@ func binaryPacked(data []byte, cb func(string)) (*Collection, error) {
 			break
 		}
 		sym := NewSymbolFromT7Bytes(data[pos:pos+10], symb_count)
-		// Tuners zero the address of protected maps to hide them.
-		// The address table is contiguous, so the real address is prev+prev.Length.
-		// Same repair T7Suite does in Trionic7File.tryToDecodePackedBinary.
-		if sym.Address == 0 && sym.Length > 0 && len(symbols) > 0 {
-			prev := symbols[len(symbols)-1]
-			sym.Address = prev.Address + uint32(prev.Length)
-			if sym.Length == 0x240 && sym.Address%2 != 0 {
-				sym.Address++
-			}
-		}
 		symbols = append(symbols, sym)
 		symb_count++
 	}
+	repairZeroedAddresses(symbols)
 	// log.Println("Symbols found: ", symb_count)
 	cb(fmt.Sprintf("Loaded %d symbols from binary", symb_count))
 

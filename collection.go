@@ -17,15 +17,10 @@ type Collection struct {
 
 func NewCollection(symbols ...*Symbol) *Collection {
 	c := &Collection{
-		symbols:   symbols,
 		nameMap:   make(map[string]*Symbol),
 		numberMap: make(map[int]*Symbol),
 	}
-	for _, s := range symbols {
-		c.nameMap[s.Name] = s
-		c.numberMap[s.Number] = s
-		c.count++
-	}
+	c.Add(symbols...)
 	return c
 }
 
@@ -52,6 +47,9 @@ func (c *Collection) Add(symbols ...*Symbol) {
 	defer c.mu.Unlock()
 	c.symbols = append(c.symbols, symbols...)
 	for _, s := range symbols {
+		if s.Length == 1 {
+			s.Type |= CHAR // one byte can only hold a byte, whatever the table says
+		}
 		c.nameMap[s.Name] = s
 		c.numberMap[s.Number] = s
 		c.count++

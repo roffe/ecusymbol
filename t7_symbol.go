@@ -34,12 +34,13 @@ func NewSymbolFromT7Bytes(data []byte, symbol_number int) *Symbol {
 	symbol_type := data[8]
 
 	return &Symbol{
-		Name:    "Symbol-" + strconv.Itoa(symbol_number),
-		Number:  symbol_number,
-		Address: internall_address,
-		Length:  symbol_length,
-		Mask:    symbol_mask,
-		Type:    symbol_type,
+		Name:             "Symbol-" + strconv.Itoa(symbol_number),
+		Number:           symbol_number,
+		Address:          internall_address,
+		Length:           symbol_length,
+		Mask:             symbol_mask,
+		Type:             symbol_type,
+		Correctionfactor: 1,
 	}
 }
 

@@ -258,13 +258,14 @@ func ReadAddressTable(data []byte, offset int) ([]*Symbol, error) {
 			break
 		} else {
 			sym := &Symbol{
-				Name:         fmt.Sprintf("Symbol-%d", symb_count),
-				Number:       symb_count,
-				Address:      uint32(symboldata[2]) | uint32(symboldata[1])<<8 | uint32(symboldata[0])<<16,
-				Length:       uint16(symboldata[4]) | uint16(symboldata[3])<<8,
-				Mask:         uint16(symboldata[6]) | uint16(symboldata[5])<<8,
-				Type:         symboldata[7],
-				ExtendedType: symboldata[8],
+				Name:             fmt.Sprintf("Symbol-%d", symb_count),
+				Number:           symb_count,
+				Address:          uint32(symboldata[2]) | uint32(symboldata[1])<<8 | uint32(symboldata[0])<<16,
+				Length:           uint16(symboldata[4]) | uint16(symboldata[3])<<8,
+				Mask:             uint16(symboldata[6]) | uint16(symboldata[5])<<8,
+				Type:             symboldata[7],
+				ExtendedType:     symboldata[8],
+				Correctionfactor: 1,
 			}
 			symbols = append(symbols, sym)
 		}

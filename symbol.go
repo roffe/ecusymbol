@@ -365,16 +365,35 @@ func (s *Symbol) BytesToInts(data []byte) []int {
 	return ints
 }
 
+// valueRange is the range of the raw values Ints reads for the symbol's type.
+func (s *Symbol) valueRange() (lo, hi int) {
+	signed := s.Type&SIGNED == SIGNED
+	char := s.Type&CHAR == CHAR
+	long := s.Type&LONG == LONG
+	bits := 16
+	switch {
+	case char && long:
+		signed = true // Ints reads these as int16
+	case char:
+		bits = 8
+	case long:
+		bits = 32
+	}
+	if signed {
+		return -1 << (bits - 1), 1<<(bits-1) - 1
+	}
+	return 0, 1<<bits - 1
+}
+
+// EncodeInt encodes a raw value, clamped to what the symbol's type holds.
 func (s *Symbol) EncodeInt(input int) []byte {
-	// signed := s.Type&SIGNED == SIGNED
-	// konst := s.Type&KONST == KONST
+	lo, hi := s.valueRange()
+	input = min(max(input, lo), hi)
 	char := s.Type&CHAR == CHAR
 	long := s.Type&LONG == LONG
 	switch {
 	case char && !long:
 		return []byte{byte(input)}
-	case !char && !long:
-		return []byte{byte(input >> 8), byte(input)}
 	case long && !char:
 		return []byte{byte(input >> 24), byte(input >> 16), byte(input >> 8), byte(input)}
 	default:
@@ -382,29 +401,18 @@ func (s *Symbol) EncodeInt(input int) []byte {
 	}
 }
 
+// EncodeFloat64 encodes a scaled value, clamped to what the symbol's type
+// holds.
 func (s *Symbol) EncodeFloat64(v float64) []byte {
-	newValue := int(math.Round((v - T5Offsets[s.Name]) / s.Correctionfactor))
-	// log.Printf("(%f - %f) / %f = %d", v, T5Offsets[s.Name], s.Correctionfactor, newValue)
-	return s.EncodeInt(newValue)
+	lo, hi := s.valueRange()
+	raw := math.Round((v - T5Offsets[s.Name]) / s.Correctionfactor)
+	return s.EncodeInt(int(min(max(raw, float64(lo)), float64(hi))))
 }
 
 func (s *Symbol) EncodeInts(input []int) []byte {
-	// signed := s.Type&SIGNED == SIGNED
-	// konst := s.Type&KONST == KONST
-	char := s.Type&CHAR == CHAR
-	long := s.Type&LONG == LONG
 	buf := bytes.NewBuffer(nil)
 	for _, v := range input {
-		switch {
-		case char && !long:
-			buf.Write([]byte{byte(v)})
-		case !char && !long:
-			buf.Write([]byte{byte(v >> 8), byte(v)})
-		case long && !char:
-			buf.Write([]byte{byte(v >> 24), byte(v >> 16), byte(v >> 8), byte(v)})
-		default:
-			buf.Write([]byte{byte(v >> 8), byte(v)})
-		}
+		buf.Write(s.EncodeInt(v))
 	}
 	return buf.Bytes()
 }

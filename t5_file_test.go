@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"errors"
 	"math/rand/v2"
+	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -191,4 +193,70 @@ func TestT5CorruptInput(t *testing.T) {
 			}
 		}
 	})
+}
+
+// T5 calibration tables decode with T5Suite's widths: bytes unless T5Suite
+// reads them as 16-bit, plus the word tables it doesn't know.
+func TestT5TableWidths(t *testing.T) {
+	cases := []struct {
+		bin, name string
+		want      []int // leading values
+	}{
+		{"4239273.BIN", "Lufttemp_steg!", nil},
+		{"4239273.BIN", "Luft_kompfak!", nil},
+		{"4239273.BIN", "Lufttemp_tab!", []int{0xA3, 0x95, 0x8A, 0x7E}},
+		{"4239273.BIN", "Data_namn!", []int{'A', '5', '3', 'U'}},
+		{"4239273.BIN", "Hot_tab!", []int{0x15, 0x15, 0x15, 0x1F}},
+		{"4239273.BIN", "Accel_konst!", []int{0x0D, 0x20, 0x46, 0x72}},
+		{"4300810.BIN", "Knock_ref_rpm!", []int{100, 150, 175, 200}},
+		{"4300331.BIN", "Weight!", []int{0, 1000, 0}},
+	}
+	loaded := map[string]*T5File{}
+	for _, c := range cases {
+		f := loaded[c.bin]
+		if f == nil {
+			path := filepath.Join("testdata/T5Binaries", c.bin)
+			if _, err := os.Stat(path); err != nil {
+				t.Skipf("%s not available", path)
+			}
+			var err error
+			if f, err = NewT5File(readBin(t, path), quietT5); err != nil {
+				t.Fatalf("%s: load: %v", c.bin, err)
+			}
+			loaded[c.bin] = f
+		}
+		s := f.GetByName(c.name)
+		if s == nil {
+			t.Errorf("%s: no %s", c.bin, c.name)
+			continue
+		}
+		v := s.Ints()
+		if c.want == nil { // byte table: one value per byte
+			if len(v) != int(s.Length) {
+				t.Errorf("%s %s: %d values from %d bytes, want bytes", c.bin, c.name, len(v), s.Length)
+			}
+			continue
+		}
+		if len(v) < len(c.want) || !slices.Equal(v[:len(c.want)], c.want) {
+			t.Errorf("%s %s = %v, want it to start %v", c.bin, c.name, v, c.want)
+		}
+	}
+}
+
+// An odd-length calibration table can only be bytes.
+func TestT5OddTablesAreBytes(t *testing.T) {
+	for _, path := range t5Bins(t) {
+		f, err := NewT5File(readBin(t, path), quietT5)
+		if err != nil {
+			t.Fatalf("%s: load: %v", filepath.Base(path), err)
+		}
+		for _, s := range f.Symbols() {
+			if !strings.HasSuffix(s.Name, "!") || s.Length < 3 || s.Length%2 == 0 || len(s.Bytes()) == 0 {
+				continue
+			}
+			if n := len(s.Ints()); n != int(s.Length) {
+				t.Errorf("%s %s: %d values from %d bytes", filepath.Base(path), s.Name, n, s.Length)
+			}
+		}
+	}
 }

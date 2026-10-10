@@ -741,7 +741,10 @@ func (t5 *T5File) tosymbol(data []byte) (*Symbol, error) {
 		return nil, errors.New("empty name")
 	}
 	length := binary.BigEndian.Uint16(data[2:4])
-	typ := T5Types[name]
+	typ, ok := T5Types[name]
+	if !ok && length > 2 && strings.HasSuffix(name, "!") && !t5SixteenBit(name) {
+		typ = CHAR // calibration tables are bytes unless T5Suite lists them
+	}
 	factor := GetCorrectionfactor(name)
 	switch {
 	case strings.HasPrefix(name, "Knock_count_cyl"):

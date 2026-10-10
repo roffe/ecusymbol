@@ -134,6 +134,9 @@ func decrypt(ct, key []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(ct)%block.BlockSize() != 0 {
+		return nil, fmt.Errorf("encrypted symbol names are %d bytes, not whole %d byte blocks", len(ct), block.BlockSize())
+	}
 	mode := ecb.NewECBDecrypter(block, true)
 	pt := make([]byte, len(ct))
 	mode.CryptBlocks(pt, ct)

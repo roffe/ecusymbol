@@ -4,10 +4,13 @@ import (
 	"bytes"
 	"fmt"
 	"log"
+	"math"
 	"math/rand/v2"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
+	"strings"
 	"testing"
 )
 
@@ -60,6 +63,10 @@ func factoryBins(t *testing.T) []factoryBin {
 		for _, f := range files {
 			if why := knownBroken[filepath.Base(f)]; why != "" {
 				t.Logf("skipping %s: %s", filepath.Base(f), why)
+				continue
+			}
+			if nordicTagged(f) {
+				t.Logf("skipping %s: Nordic tune, symbol table broken on purpose", filepath.Base(f))
 				continue
 			}
 			bins = append(bins, factoryBin{d.typ, f})
@@ -171,6 +178,25 @@ const checksumBudget = 256
 
 type writer interface {
 	Byte() ([]byte, error)
+}
+
+// nordicTagged reports whether a binary carries Nordic's "Tag:Nordic" stamp
+// at the end of flash. Their tunes hide maps by breaking the symbol table.
+func nordicTagged(path string) bool {
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+	tail := make([]byte, 0x100)
+	fi, err := f.Stat()
+	if err != nil || fi.Size() < int64(len(tail)) {
+		return false
+	}
+	if _, err := f.ReadAt(tail, fi.Size()-int64(len(tail))); err != nil {
+		return false
+	}
+	return bytes.Contains(tail, []byte("Tag:Nordic"))
 }
 
 func readBin(t *testing.T, path string) []byte {
@@ -377,6 +403,87 @@ func TestFactoryWrite(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestFactoryValues: every symbol's values encode back to its own bytes, and
+// a value moved by one step reads back as written, the way the map editors
+// save.
+func TestFactoryValues(t *testing.T) {
+	for _, bin := range factoryBins(t) {
+		t.Run(bin.String(), func(t *testing.T) {
+			t.Parallel()
+			_, fw, err := Load(bin.path, readBin(t, bin.path), quiet)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, s := range fw.Symbols() {
+				orig := s.Bytes()
+				if s.Length == 0 || len(orig) != int(s.Length) {
+					continue
+				}
+				vals := s.Float64s()
+				if got := s.EncodeFloat64s(vals); !bytes.Equal(got, orig) {
+					t.Errorf("%s: values encode to % X, want % X", s.Name, got, orig)
+					continue
+				}
+				// one step up, or down when the value is at the top of its range
+				i := len(vals) / 2
+				edited := slices.Clone(vals)
+				edited[i] += s.Correctionfactor
+				if _, hi := s.valueRange(); s.Ints()[i] == hi {
+					edited[i] = vals[i] - s.Correctionfactor
+				}
+				if err := s.SetData(s.EncodeFloat64s(edited)); err != nil {
+					t.Fatalf("%s: %v", s.Name, err)
+				}
+				if got := s.Float64s()[i]; math.Abs(got-edited[i]) > s.Correctionfactor/2 {
+					t.Errorf("%s[%d]: wrote %g, reads %g", s.Name, i, edited[i], got)
+				}
+				_ = s.SetData(orig)
+			}
+		})
+	}
+}
+
+// TestT8AliasedEdit: a T8 edit through one of two symbols sharing the same
+// bytes survives the save even when the other one comes later in the table.
+func TestT8AliasedEdit(t *testing.T) {
+	for _, bin := range factoryBins(t) {
+		if bin.typ != ECU_T8 {
+			continue
+		}
+		_, fw, err := Load(bin.path, readBin(t, bin.path), quiet)
+		if err != nil {
+			t.Fatal(err)
+		}
+		f := fw.(*T8File)
+		i := slices.IndexFunc(f.Symbols(), func(s *Symbol) bool {
+			return strings.Contains(s.Name, "Cal.") && s.Length >= 2 && len(s.data) == int(s.Length)
+		})
+		if i < 0 {
+			t.Fatal("no calibration symbol")
+		}
+		s := f.Symbols()[i]
+		twin := &Symbol{Name: "twin", Number: -1, Address: s.Address, Length: s.Length, Type: s.Type, data: bytes.Clone(s.data)}
+		f.Add(twin)
+		edited := bytes.Clone(s.data)
+		edited[0] ^= 0xFF
+		if err := s.SetData(edited); err != nil {
+			t.Fatal(err)
+		}
+		out, err := f.Byte()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(out[s.Address:int(s.Address)+len(edited)], edited) {
+			t.Errorf("%s: edit lost on save", s.Name)
+		}
+		if !bytes.Equal(twin.Bytes(), edited) {
+			t.Errorf("%s: the symbol sharing its bytes doesn't show the edit", s.Name)
+		}
+		return // one binary is enough
+	}
+	t.Skip("no T8 factory binary")
 }
 
 // TestFactoryAliases: when several symbols share one flash range, an edit

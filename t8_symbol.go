@@ -60,6 +60,9 @@ func loadT8Symbols(fileBytes []byte, cb func(string)) (*Collection, error) {
 	cb(fmt.Sprintf("Primary Offset: 0x%X", priOffset))
 	cb(fmt.Sprintf("Secondary Offset: 0x%X", secOffset))
 
+	if len(names) < len(symbols)+1 {
+		return nil, fmt.Errorf("symbol table has %d names for %d symbols", len(names)-1, len(symbols))
+	}
 	for i := range symbols {
 		symbols[i].Name = names[i+1]
 		symbols[i].Unit = GetUnit(symbols[i].Name)

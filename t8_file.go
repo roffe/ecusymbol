@@ -15,7 +15,9 @@ const (
 	T8Length = 0x100000
 )
 
-var T8MagicBytes = []byte{0x00, 0x10, 0x0C, 0x00}
+// T8ResetVector is the second longword of every T8 image (the first is the
+// initial stack pointer, which is not the same in every dump).
+var T8ResetVector = []byte{0x00, 0x00, 0x04, 0x8C}
 
 type T8File struct {
 	data []byte // the raw data
@@ -23,6 +25,10 @@ type T8File struct {
 
 	autoCorrect bool
 	printFunc   func(string)
+	// l2ByteSum records whether this file's layer-2 checksum is the byte sum
+	// or the dword sum. It can only be told from the factory value, so it is
+	// decided the first time the checksum is calculated and kept after that.
+	l2ByteSum *bool
 }
 
 type T8FileOpt func(*T8File) error
@@ -45,7 +51,7 @@ func NewT8File(data []byte, opts ...T8FileOpt) (*T8File, error) {
 	if len(data) != T8Length {
 		return nil, ErrInvalidLength
 	}
-	if !bytes.HasPrefix(data, T8MagicBytes) {
+	if !bytes.Equal(data[4:8], T8ResetVector) {
 		return nil, ErrMagicBytesNotFound
 	}
 
@@ -245,7 +251,7 @@ func (t8 *T8File) CalculateLayer2Checksum(offset int) error {
 	}
 
 	// Search for checksum information in coded_buffer
-	for index = 0; index < 0x100; index++ {
+	for index = 0; index < 0x100-12; index++ {
 		if codedBuffer[index] == 0xFB && codedBuffer[index+6] == 0xFC && codedBuffer[index+12] == 0xFD {
 			sum0 = binary.BigEndian.Uint32(codedBuffer[index+1 : index+5])
 			matrixDimension = binary.BigEndian.Uint32(codedBuffer[index+7 : index+11])
@@ -268,7 +274,11 @@ func (t8 *T8File) CalculateLayer2Checksum(offset int) error {
 					x += 4
 				}
 
-				if (checksum0 & 0xFFF00000) != (sum0 & 0xFFF00000) {
+				if t8.l2ByteSum == nil {
+					byteSum := (checksum0 & 0xFFF00000) == (sum0 & 0xFFF00000)
+					t8.l2ByteSum = &byteSum
+				}
+				if !*t8.l2ByteSum {
 					checksum0 = checksum1
 				}
 

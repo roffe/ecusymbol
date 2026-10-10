@@ -53,7 +53,10 @@ func IsTrionic8File(data []byte) error {
 	if len(data) != T8Length {
 		return ErrInvalidLength
 	}
-	return dataHasPrefix(data, T8MagicBytes)
+	if !bytes.Equal(data[4:8], T8ResetVector) {
+		return ErrMagicBytesNotFound
+	}
+	return nil
 }
 
 func dataHasPrefix(data []byte, prefix []byte) error {

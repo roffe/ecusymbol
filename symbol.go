@@ -37,6 +37,7 @@ func Load(filename string, data []byte, printFunc func(string)) (ECUType, Firmwa
 	case ECU_T5:
 		sym, err := NewT5File(
 			data,
+			WithT5AutoCorrectChecksum(),
 			WithT5PrintFunc(printFunc),
 		)
 		return ECU_T5, sym, err

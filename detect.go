@@ -35,7 +35,7 @@ func DetectType(data []byte) (ECUType, error) {
 }
 
 func IsTrionic5File(data []byte) error {
-	if len(data) != LengthT55 {
+	if len(data) != LengthT52 && len(data) != LengthT55 {
 		return ErrInvalidLength
 	}
 	// return fileHasPrefix(file, T5MagicBytes)

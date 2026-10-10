@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 )
 
 const (
@@ -24,6 +25,7 @@ type T5File struct {
 	m_symboltablestartaddress int
 	printFunc                 func(string)
 	softwareVersion           string
+	autoCorrect               bool
 	*Collection
 }
 
@@ -36,8 +38,17 @@ func WithT5PrintFunc(f func(string)) T5FileOpt {
 	}
 }
 
+// WithT5AutoCorrectChecksum loads a file whose stored checksum is wrong and
+// recalculates it, the way T5Suite opens such a file and repairs it on save.
+func WithT5AutoCorrectChecksum() T5FileOpt {
+	return func(t5 *T5File) error {
+		t5.autoCorrect = true
+		return nil
+	}
+}
+
 func NewT5File(data []byte, opts ...T5FileOpt) (*T5File, error) {
-	if len(data) != LengthT55 {
+	if len(data) != LengthT52 && len(data) != LengthT55 {
 		return nil, ErrInvalidLength
 	}
 
@@ -67,7 +78,11 @@ func (t5 *T5File) init() (*T5File, error) {
 		return nil, err
 	}
 	t5.softwareVersion = t5.findSoftwareVersion()
-	return t5, t5.VerifyChecksum()
+	err := t5.VerifyChecksum()
+	if errors.Is(err, ErrChecksumMismatch) && t5.autoCorrect {
+		return t5, t5.UpdateChecksum()
+	}
+	return t5, err
 }
 
 // findSoftwareVersion scans the binary for a software ID matching the
@@ -103,8 +118,9 @@ func (t5 *T5File) findSoftwareVersionEnd() int {
 	return -1
 }
 
+// isT5Alpha matches T5Suite's IsAlpha, which accepts digits as well.
 func isT5Alpha(b byte) bool {
-	return (b >= 'A' && b <= 'Z') || (b >= 'a' && b <= 'z')
+	return isT5Numeric(b) || (b >= 'A' && b <= 'Z') || (b >= 'a' && b <= 'z')
 }
 
 func isT5Numeric(b byte) bool {
@@ -119,9 +135,13 @@ func (t5 *T5File) calculateChecksum() (uint32, error) {
 	if indexOfFirstMarking <= 0 {
 		return 0, ErrEndOfSymbolTableNotFound
 	}
+	end := indexOfFirstMarking + 4
+	if end > len(t5.data) {
+		return 0, fmt.Errorf("end marker %X outside file: %w", end, ErrOffsetOutOfRange)
+	}
 	var checksum uint32
-	for i := 0; i < indexOfFirstMarking+4; i++ {
-		checksum += uint32(t5.data[i])
+	for _, b := range t5.data[:end] {
+		checksum += uint32(b)
 	}
 	return checksum, nil
 }
@@ -151,7 +171,7 @@ func (t5 *T5File) UpdateChecksum() error {
 	}
 
 	binary.BigEndian.PutUint32(t5.data[dataLength-4:], checksum)
-	log.Printf("Checksum updated to %X", t5.data[dataLength-4:])
+	t5.printFunc(fmt.Sprintf("Checksum updated to %08X", checksum))
 	return nil
 }
 
@@ -179,31 +199,52 @@ func (t5 *T5File) VerifyChecksum() error {
 	return nil
 }
 
-func (t5 *T5File) Save(filename string) error {
-	log.Printf("Saving T5 file to %s", filename)
+// writeBack copies edited symbols into the binary and refreshes the checksum.
+// Several symbols can share one flash range (Adapt_ref, Adapt_korr and
+// Insp_mat! for example), so only symbols whose cached data differs from the
+// binary are written, and every cache is then re-read so the aliases of an
+// edited symbol carry the new bytes instead of restoring the old ones on the
+// next save.
+func (t5 *T5File) writeBack() error {
+	var edited []*Symbol
 	for _, sym := range t5.Symbols() {
-		if sym.Address == 0 {
+		if sym.Address == 0 || sym.data == nil {
 			continue
 		}
-		addr := sym.Address
-		//		log.Printf("Writing symbol %s to address %X", sym.Name, addr)
-		copy(t5.data[addr:addr+uint32(len(sym.data))], sym.data)
+		end := int(sym.Address) + len(sym.data)
+		if end > len(t5.data) {
+			return fmt.Errorf("%s @%X+%d: %w", sym.Name, sym.Address, len(sym.data), ErrAddressOutOfRange)
+		}
+		if !bytes.Equal(sym.data, t5.data[sym.Address:end]) {
+			edited = append(edited, sym)
+		}
 	}
-	if err := t5.UpdateChecksum(); err != nil {
+	for _, sym := range edited {
+		copy(t5.data[sym.Address:], sym.data)
+	}
+	for _, sym := range t5.Symbols() {
+		if sym.Address != 0 && sym.data != nil {
+			copy(sym.data, t5.data[sym.Address:])
+		}
+	}
+	return t5.UpdateChecksum()
+}
+
+func (t5 *T5File) Save(filename string) error {
+	t5.printFunc(fmt.Sprintf("Saving T5 file to %s", filename))
+	if err := t5.writeBack(); err != nil {
 		return err
 	}
 	return os.WriteFile(filename, t5.data, 0o644)
 }
 
+// Bytes returns the binary as loaded, without writing back edited symbols.
+func (t5 *T5File) Bytes() []byte {
+	return t5.data
+}
+
 func (t5 *T5File) Byte() ([]byte, error) {
-	for _, sym := range t5.Symbols() {
-		if sym.Address == 0 {
-			continue
-		}
-		addr := sym.Address
-		copy(t5.data[addr:addr+uint32(len(sym.data))], sym.data)
-	}
-	if err := t5.UpdateChecksum(); err != nil {
+	if err := t5.writeBack(); err != nil {
 		return nil, err
 	}
 	return t5.data, nil
@@ -267,6 +308,21 @@ func (t5 *T5File) parseData() error {
 	var state int = -10
 	var charcount int
 	buff := bytes.NewBuffer(nil)
+	// addRecord turns the buffered record into a symbol. T5Suite drops a
+	// record it cannot decode and keeps parsing, so do the same.
+	addRecord := func(t int) {
+		address := t - charcount
+		if t5.m_symboltablestartaddress == 0 && t > 0xA000 {
+			t5.m_symboltablestartaddress = address
+		}
+		if sym, err := t5.tosymbol(buff.Bytes()); err != nil {
+			t5.printFunc(fmt.Sprintf("skipping symbol record at %X: %v", address, err))
+		} else {
+			t5.numberOfSymbols++
+			symbols = append(symbols, sym)
+		}
+		buff.Reset()
+	}
 outer:
 	for t, b := range t5.data {
 		switch state {
@@ -321,44 +377,19 @@ outer:
 			}
 		case 2:
 			if charcount < 32 {
-				if b == 0x0d && t5.data[t+1] == 0x0a { // start of next symbol
+				if b == 0x0d && t+1 < len(t5.data) && t5.data[t+1] == 0x0a { // start of next symbol
 					state = 1
-					address := t - charcount
-					if t5.m_symboltablestartaddress == 0 && t > 0xA000 {
-						t5.m_symboltablestartaddress = address
-					}
-					sym, err := t5.tosymbol(buff.Bytes())
-					if err != nil {
-						return err
-					}
-					t5.numberOfSymbols++
-					symbols = append(symbols, sym)
-
-					buff.Reset()
+					addRecord(t)
 				} else {
-					if err := buff.WriteByte(b); err != nil {
-						return err
-					}
+					buff.WriteByte(b)
 					charcount++
 				}
 			} else {
-				address := t - charcount
-				if t5.m_symboltablestartaddress == 0 && t > 0xA000 {
-					t5.m_symboltablestartaddress = address
-				}
 				if bytes.HasPrefix(buff.Bytes(), []byte("END$")) {
-					//					log.Println("END$ found")
 					break outer
-				} else {
-					sym, err := t5.tosymbol(buff.Bytes())
-					if err != nil {
-						return err
-					}
-					t5.numberOfSymbols++
-					symbols = append(symbols, sym)
-					buff.Reset()
-					state = 0
 				}
+				addRecord(t)
+				state = 0
 			}
 		}
 	}
@@ -383,11 +414,13 @@ outer:
 			// log.Println(sym.Name, "has no address")
 			continue
 		}
-		// fmt.Fprintf(f, "SRAM: %X, ADDR: %X, LEN: %d NAME: %s\n", sym.SramOffset, sym.Address, sym.Length, sym.Name)
-		sym.data = make([]byte, sym.Length)
-		if err := binary.Read(bytes.NewReader(t5.data[sym.Address:sym.Address+uint32(sym.Length)]), binary.BigEndian, sym.data); err != nil {
-			return err
+		end := int(sym.Address) + int(sym.Length)
+		if end > len(t5.data) {
+			t5.printFunc(fmt.Sprintf("%s: flash range %X+%d outside file, treating as RAM only", sym.Name, sym.Address, sym.Length))
+			sym.Address = 0
+			continue
 		}
+		sym.data = bytes.Clone(t5.data[sym.Address:end])
 	}
 
 	for _, v := range alh {
@@ -644,8 +677,17 @@ func (t5 *T5File) readAddressLookupTable(numberOfSymbols int) (map[uint32]addres
 		}
 		binPos += 2
 
-		addressRecords[uint32(sramAddress)] = addressRecord{
-			FlashAddress: flashAddress - uint32(len(t5.data)),
+		// Flash is mapped at 0x40000-0x7FFFF; a T5.2 image fills only the
+		// upper half, so reduce modulo the image size like T5Suite does.
+		// Entries outside the window are garbage and are dropped.
+		switch _, dup := addressRecords[uint32(sramAddress)]; {
+		case flashAddress < 0x40000 || flashAddress >= 0x80000:
+			log.Printf("lookup entry %X for SRAM %04X outside flash, ignoring", flashAddress, sramAddress)
+		case dup: // T5Suite keeps the first entry for an SRAM address
+		default:
+			addressRecords[uint32(sramAddress)] = addressRecord{
+				FlashAddress: flashAddress % uint32(len(t5.data)),
+			}
 		}
 
 		// Check if there is a nother symbol in the next 16 bytes
@@ -681,6 +723,9 @@ func (t5 *T5File) readAddressLookupTable(numberOfSymbols int) (map[uint32]addres
 }
 
 func (t5 *T5File) tosymbol(data []byte) (*Symbol, error) {
+	if len(data) < 4 {
+		return nil, fmt.Errorf("record too short (%d bytes)", len(data))
+	}
 	var invalidCharCount int
 	for _, b := range data[4:] {
 		if b < 10 {
@@ -688,19 +733,34 @@ func (t5 *T5File) tosymbol(data []byte) (*Symbol, error) {
 		}
 	}
 	if invalidCharCount > 2 {
-		log.Println("Too many invalid chars")
-		return nil, fmt.Errorf("too many invalid chars")
+		return nil, errors.New("too many invalid chars")
 	}
 
 	name := CString(data[4:])
+	if name == "" {
+		return nil, errors.New("empty name")
+	}
+	length := binary.BigEndian.Uint16(data[2:4])
+	typ := T5Types[name]
+	factor := GetCorrectionfactor(name)
+	switch {
+	case strings.HasPrefix(name, "Knock_count_cyl"):
+		// Some firmwares store 2/4/6/8 for cyl1..4; T5Suite forces 2 (ParseTrionicFile).
+		length = 2
+	case strings.HasPrefix(name, "Reg_kon_mat") && length != 0x80:
+		// 0x80 bytes is the 8-bit throttle x rpm matrix in %. Later firmware
+		// stores a 31-row 16-bit rpm table in 0.1 % (T5Suite isSixteenBitTable,
+		// GetMapCorrectionFactor).
+		typ &^= CHAR
+		factor = 0.1
+	}
 
-	//	log.Println(sym.String())
 	return &Symbol{
 		Number:           t5.numberOfSymbols,
 		SramOffset:       uint32(binary.BigEndian.Uint16(data[0:2])),
-		Length:           binary.BigEndian.Uint16(data[2:4]),
+		Length:           length,
 		Name:             name,
-		Type:             T5Types[name],
-		Correctionfactor: GetCorrectionfactor(name),
+		Type:             typ,
+		Correctionfactor: factor,
 	}, nil
 }

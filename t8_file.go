@@ -91,21 +91,7 @@ func (t8 *T8File) Bytes() []byte {
 }
 
 func (t8 *T8File) Save(filename string) error {
-	for _, sym := range t8.Symbols() {
-		if sym.Address == 0 {
-			continue
-		}
-		if sym.Address > 0x100000 { //+32768 {
-			if sym.Address > uint32(len(t8.data)) {
-				//log.Printf("%s: addr %X sram offset %X", sym.Name, sym.Address, sym.SramOffset)
-				//return ErrAddressOutOfRange
-				continue
-			}
-		}
-		copy(t8.data[sym.Address:sym.Address+uint32(len(sym.data))], sym.data)
-	}
-
-	if err := t8.VerifyChecksum(); err != nil {
+	if err := t8.writeBack(); err != nil {
 		return err
 	}
 
@@ -118,24 +104,36 @@ func (t8 *T8File) Save(filename string) error {
 }
 
 func (t8 *T8File) Byte() ([]byte, error) {
-	for _, sym := range t8.Symbols() {
-		if sym.Address == 0 {
-			continue
-		}
-		if sym.Address > 0x100000 { //+32768 {
-			if sym.Address > uint32(len(t8.data)) {
-				//log.Printf("%s: addr %X sram offset %X", sym.Name, sym.Address, sym.SramOffset)
-				//return nil, ErrAddressOutOfRange
-				continue
-			}
-		}
-		copy(t8.data[sym.Address:sym.Address+uint32(len(sym.data))], sym.data)
-	}
-
-	if err := t8.VerifyChecksum(); err != nil {
+	if err := t8.writeBack(); err != nil {
 		return nil, err
 	}
 	return t8.data, nil
+}
+
+// writeBack stores the symbols whose data was edited in the image, then
+// reloads every symbol from it, so an edit through one of several symbols
+// sharing the same bytes wins and shows through the others. Symbols without
+// a flash image (RAM) are skipped.
+func (t8 *T8File) writeBack() error {
+	var edited []*Symbol
+	for _, sym := range t8.Symbols() {
+		end := int(sym.Address) + len(sym.data)
+		if sym.Address == 0 || end > len(t8.data) {
+			continue
+		}
+		if !bytes.Equal(sym.data, t8.data[sym.Address:end]) {
+			edited = append(edited, sym)
+		}
+	}
+	for _, sym := range edited {
+		copy(t8.data[sym.Address:], sym.data)
+	}
+	for _, sym := range t8.Symbols() {
+		if end := int(sym.Address) + len(sym.data); sym.Address != 0 && end <= len(t8.data) {
+			copy(sym.data, t8.data[sym.Address:end])
+		}
+	}
+	return t8.VerifyChecksum()
 }
 
 func (t8 *T8File) Version() string {

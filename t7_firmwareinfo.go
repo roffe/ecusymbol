@@ -152,7 +152,7 @@ func (t7 *T7File) GetInfo() T7FirmwareInfo {
 			fi.ProgrammingDateTime = ts
 		}
 	}
-	fi.CompressedSymboltable = isBinaryPackedVersion(t7.data, 0x9B)
+	fi.CompressedSymboltable = isBinaryPackedVersion(t7.data)
 	missing := 0
 	for _, s := range t7.Symbols() {
 		if strings.HasPrefix(s.Name, "Symbol") {

@@ -244,3 +244,28 @@ func TestFooterPreservesUnknownFields(t *testing.T) {
 		t.Errorf("0xF3 lost on the second rebuild: got % X", got)
 	}
 }
+
+// Bytes that only look like a 0x9B field, say a checksum holding 9B 12,
+// don't make a file binary packed; a 0x9B field in the footer chain does.
+func TestBinaryPackedNeedsField(t *testing.T) {
+	footer := func(fields ...[]byte) []byte { // each field: id, then payload
+		data := bytes.Repeat([]byte{0xFF}, 0x1000)
+		addr := len(data) - 1
+		for _, f := range fields {
+			data[addr], data[addr-1] = byte(len(f)-1), f[0]
+			addr -= 2
+			for _, b := range f[1:] {
+				data[addr] = b
+				addr--
+			}
+		}
+		return data
+	}
+	checksum := []byte{0xFB, 0x12, 0x9B, 0x05, 0x34} // stored as 34 05 9B 12
+	if isBinaryPackedVersion(footer(checksum)) {
+		t.Error("9B 12 inside a field's payload read as a 0x9B field")
+	}
+	if !isBinaryPackedVersion(footer(checksum, []byte{0x9B, 0x00, 0x05, 0xC0, 0x00})) {
+		t.Error("0x9B field not found")
+	}
+}

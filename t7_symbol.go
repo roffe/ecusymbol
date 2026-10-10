@@ -69,7 +69,7 @@ func loadT7Symbols(data []byte, cb func(string)) (*Collection, error) {
 	//	}
 	//}
 
-	if !isBinaryPackedVersion(data, 0x9B) {
+	if !isBinaryPackedVersion(data) {
 		// return nil, errors.New("non binarypacked not implemented, send your bin to Roffe")
 		// log.Println("Not a binarypacked version")
 		cb("Not a binarypacked symbol table")
@@ -534,45 +534,11 @@ func getSymbolListOffSet(data []byte) (int, error) {
 	return -1, errors.New("Symbol list not found")
 }
 
-func readMarkerAddressContent(data []byte, marker byte) (length, retval, val int, err error) {
-	fileoffset := len(data) - 0x201
-	inb := data[len(data)-0x201:]
-
-	if len(inb) != 0x201 {
-		err = fmt.Errorf("ReadMarkerAddressContent: read %d bytes, expected %d", len(inb), 0x201)
-		return
-	}
-	for t := 0; t < 0x201; t++ {
-		if inb[t] == marker && inb[t+1] < 0x30 {
-			// Marker found, read 6 bytes
-			retval = fileoffset + t // 0x07FF70 + t
-			length = int(inb[t+1])
-			break
-		}
-	}
-	pos := retval - length
-	info := data[pos : pos+length]
-	if len(info) != length {
-		err = fmt.Errorf("ReadMarkerAddressContent: read %d bytes, expected %d", len(info), length)
-		return
-	}
-	for bc := 0; bc < length; bc++ {
-		val <<= 8
-		val |= int(info[bc])
-	}
-	return
-}
-
-func isBinaryPackedVersion(data []byte, filelength int) bool {
-	length, retval, _, err := readMarkerAddressContent(data, 0x9B)
-	if err != nil {
-		panic(err)
-	}
-	// log.Printf("Length: %d, Retval: %X, Val: %X", length, retval, val)
-	if retval > 0 && length < filelength && length > 0 {
-		return true
-	}
-	return false
+// isBinaryPackedVersion reports whether the footer has a 0x9B field, the
+// address of the compressed symbol table.
+func isBinaryPackedVersion(data []byte) bool {
+	f, err := GetT7HeaderField(data, 0x9B)
+	return err == nil && len(f) > 0
 }
 
 func GetT7HeaderField(bin []byte, id byte) ([]byte, error) {
@@ -608,8 +574,9 @@ func GetT7HeaderField(bin []byte, id byte) ([]byte, error) {
 			// find the last field if there are several (mainly this
 			// is for searching for the last VIN field)
 			// return 1;
+		} else {
+			addr -= int(fieldLength)
 		}
-		addr -= int(fieldLength)
 	}
 	if found {
 		return answer, nil

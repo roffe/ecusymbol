@@ -177,11 +177,13 @@ func (t7 *T7File) Bytes() []byte {
 
 func (t7 *T7File) Save(filename string) error {
 	for _, sym := range t7.Symbols() {
+		if sym.Number == 0 {
+			continue // SymbolNames: the symbol table itself, see readAllT7SymbolsData
+		}
 		addr := sym.Address
 		if sym.Address > 0x7FFFFF {
 			if sym.Address-sym.SramOffset > uint32(len(t7.data)) {
-				log.Printf("Warning: symbol %s has address 0x%X which is out of range, skipping\n", sym.Name, sym.Address)
-				continue
+				continue // live-only RAM variable, no flash image
 			}
 			addr = sym.Address - sym.SramOffset
 		}
@@ -209,17 +211,19 @@ func (t7 *T7File) Save(filename string) error {
 
 func (t7 *T7File) Byte() ([]byte, error) {
 	for _, sym := range t7.Symbols() {
+		if sym.Number == 0 {
+			continue // SymbolNames: the symbol table itself, see readAllT7SymbolsData
+		}
 		addr := sym.Address
 		if sym.Address > 0x7FFFFF {
 			if sym.Address-sym.SramOffset > uint32(len(t7.data)) {
-				return nil, ErrAddressOutOfRange
+				continue // live-only RAM symbol, see Save
 			}
 			addr = sym.Address - sym.SramOffset
 		}
 		for idx, b := range sym.data {
 			(t7.data)[addr+uint32(idx)] = b
 		}
-		// copy(t7.data[addr:addr+uint32(len(sym.data))], sym.data)
 	}
 
 	if err := t7.UpdateChecksum(); err != nil {

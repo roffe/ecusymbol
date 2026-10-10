@@ -140,17 +140,12 @@ outer:
 		// internal_address := binary.BigEndian.Uint32(buff[10:14])
 		sym_type := buff[8]
 
-		var real_rom_address uint32
-		if sram_address > T7SRAMAddress {
-			real_rom_address = sram_address - 0xEF02F0
-		} else {
-			real_rom_address = sram_address
-		}
-
+		// RAM variables keep their RAM address and get no flash data, see
+		// readAllT7SymbolsData.
 		sym := &Symbol{
 			Name:             strings.TrimSpace(symbolNames[symb_count]),
 			Number:           symb_count,
-			Address:          real_rom_address,
+			Address:          sram_address,
 			Length:           symbol_length,
 			Mask:             binary.BigEndian.Uint16(buff[6:8]),
 			Type:             sym_type,
@@ -158,14 +153,6 @@ outer:
 			Unit:             GetUnit(strings.TrimSpace(symbolNames[symb_count])),
 		}
 		fixT7SymbolType(sym)
-		if sym.Address < T7SRAMAddress {
-			data, err := readSymbolData(data, sym, 0)
-			if err == nil {
-				sym.data = data
-			} else {
-				log.Println(err)
-			}
-		}
 
 		// if sym.Name == "BFuelCal.E85Map" {
 		// 	log.Println(sym.String())
@@ -197,6 +184,9 @@ outer:
 	//log.Println("Symbols found: ", symb_count)
 	cb(fmt.Sprintf("Loaded %d symbols from binary", symb_count))
 
+	if err := readAllT7SymbolsData(data, symCol.Symbols()); err != nil {
+		return nil, err
+	}
 	return symCol, nil
 }
 
@@ -338,20 +328,78 @@ func t7CalDelta(fileBytes []byte) (uint32, error) {
 	return 0, errors.New("t7: calibration RAM/ROM delta not found")
 }
 
-func readAllT7SymbolsData(fileBytes []byte, symbols []*Symbol) error {
-	delta, err := t7CalDelta(fileBytes)
-	if err != nil {
-		return err
+// t7CalWindow is one calconst->caldata copy the firmware makes at start-up:
+// RAM [ram, ram+size) is initialised from flash [flash, flash+size).
+type t7CalWindow struct {
+	ram, flash, size uint32
+}
+
+// t7CalWindows finds the start-up copies in the code. Initdata.c loads the
+// three section constants with "move.l #imm,d0" (20 3C imm32) one after the
+// other: calconst start, caldata start, calconst size. Only copies whose
+// RAM-flash distance is the linker delta from the footer count, the same
+// instruction shape occurs in other copy loops.
+func t7CalWindows(data []byte, delta uint32) []t7CalWindow {
+	type mv struct {
+		pos int
+		imm uint32
 	}
-	for _, sym := range symbols {
-		sym.SramOffset = delta
-		off := sym.Address
-		if sym.Address >= T7SRAMAddress {
-			if sym.Address < delta {
-				// RAM below caldata (ivlan/EOL/diag vars, PLT_buffer): no flash image, live-only.
+	var mvs []mv
+	for i := 0; i+6 <= len(data); i += 2 {
+		if data[i] == 0x20 && data[i+1] == 0x3C {
+			mvs = append(mvs, mv{i, binary.BigEndian.Uint32(data[i+2:])})
+		}
+	}
+	var out []t7CalWindow
+	for i, a := range mvs {
+		if a.imm >= uint32(len(data)) {
+			continue
+		}
+		for j := i + 1; j < len(mvs) && mvs[j].pos-a.pos <= 64; j++ {
+			if mvs[j].imm != a.imm+delta {
 				continue
 			}
-			off = sym.Address - delta
+			for k := j + 1; k < len(mvs) && mvs[k].pos-mvs[j].pos <= 64; k++ {
+				if size := mvs[k].imm; size > 0 && a.imm+size <= uint32(len(data)) {
+					out = append(out, t7CalWindow{mvs[j].imm, a.imm, size})
+				}
+				break
+			}
+			break
+		}
+	}
+	return out
+}
+
+// readAllT7SymbolsData points every symbol at its bytes in the binary. ROM
+// symbols sit at their address. A RAM symbol has a flash image only when it
+// lies in a calibration window (then SramOffset is the RAM-flash distance,
+// which Save uses); other RAM variables are live-only and get no data. Symbol
+// 0 (SymbolNames / SymbolTableStart) is the symbol table itself and is left
+// alone so a writeback can never destroy the table.
+func readAllT7SymbolsData(fileBytes []byte, symbols []*Symbol) error {
+	var windows []t7CalWindow
+	if delta, err := t7CalDelta(fileBytes); err == nil {
+		windows = t7CalWindows(fileBytes, delta)
+	}
+	for _, sym := range symbols {
+		if sym.Number == 0 {
+			continue
+		}
+		off := sym.Address
+		if sym.Address >= T7SRAMAddress {
+			var w *t7CalWindow
+			for i := range windows {
+				if sym.Address >= windows[i].ram && sym.Address+uint32(sym.Length) <= windows[i].ram+windows[i].size {
+					w = &windows[i]
+					break
+				}
+			}
+			if w == nil {
+				continue
+			}
+			sym.SramOffset = w.ram - w.flash
+			off = sym.Address - sym.SramOffset
 		}
 		if end := uint64(off) + uint64(sym.Length); end > uint64(len(fileBytes)) {
 			log.Printf("symbol data outside file: %s", sym.String())
@@ -379,17 +427,6 @@ func reverseInt(value uint32) uint32 {
 	return retval
 }
 */
-
-func readSymbolData(file []byte, s *Symbol, offset uint32) ([]byte, error) {
-	//	log.Println("readSymbolData: ", s.String())
-	defer func() {
-		if err := recover(); err != nil {
-			log.Printf("%s, error reading symbol data: %v", s.String(), err)
-		}
-	}()
-	symData := file[s.Address-offset : (s.Address-offset)+uint32(s.Length)]
-	return symData, nil
-}
 
 func determineVersion(data []byte) (string, error) {
 	switch {
@@ -446,7 +483,11 @@ var searchPattern = []byte{0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 // var searchPattern2 = []byte{0x00, 0x08, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 // var searchPattern3 = []byte{0x73, 0x59, 0x4D, 0x42, 0x4F, 0x4C, 0x74, 0x41, 0x42, 0x4C, 0x45, 0x00} // 12
 func GetT7Offsets(data []byte, cb func(string)) (bool, int, int, int, error) {
-	addressTableOffset := kmp.BytePatternSearch(data, searchPattern, 0x30000) - 0x06
+	addressTableOffset := kmp.BytePatternSearch(data, searchPattern, 0x30000)
+	if addressTableOffset < 0 {
+		return false, -1, 0, 0, ErrAddressTableOffsetNotFound
+	}
+	addressTableOffset -= 0x06
 	cb(fmt.Sprintf("Address table offset: %08X", addressTableOffset))
 
 	if delta, err := t7CalDelta(data); err == nil {

@@ -30,8 +30,10 @@ func ExpandCompressedSymbolNames(in []byte) ([]string, error) {
 
 	expandedFileSize := int(in[0]) | (int(in[1]) << 8) | (int(in[2]) << 16) | (int(in[3]) << 24)
 
-	if expandedFileSize == -1 {
-		return nil, errors.New("invalid expanded file size")
+	// A corrupt table can claim any size; a real name table expands to well
+	// under a megabyte, so refuse absurd sizes instead of allocating them.
+	if expandedFileSize <= 0 || expandedFileSize > 1<<22 {
+		return nil, fmt.Errorf("invalid expanded symbol table size %d", expandedFileSize)
 	}
 
 	out := make([]byte, expandedFileSize)

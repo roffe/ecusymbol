@@ -59,6 +59,8 @@ func (t7 *T7File) UpdateChecksum() error {
 		return err
 	}
 	t7.printFunc(fmt.Sprintf("Calculated FW checksum: %X", calculatedFWChecksum))
+	// The F2 and FB checksums cover the FW checksum slot, so store it first.
+	t7.setFWChecksum(calculatedFWChecksum)
 
 	calculatedF2Checksum, err := t7.calculateF2Checksum()
 	if err != nil {
@@ -71,8 +73,6 @@ func (t7 *T7File) UpdateChecksum() error {
 		return err
 	}
 	t7.printFunc(fmt.Sprintf("Calculated FB checksum: %X", calculatedFBChecksum))
-
-	t7.setFWChecksum(calculatedFWChecksum)
 
 	t7.checksumF2 = int(calculatedF2Checksum)
 	t7.checksumFB = int(calculatedFBChecksum)

@@ -211,6 +211,22 @@ var axisT5 = AxisInformation{
 		XFrom:        "P_medel",
 		YFrom:        "Rpm",
 	},
+	// T5.2 has a per-rpm knock reference table instead of the matrix
+	"Knock_ref_tab!": Axis{
+		X:            "",
+		Y:            "Knock_ref_rpm!",
+		Z:            "Knock_ref_tab!",
+		XDescription: "",
+		YDescription: "RPM",
+		ZDescription: "Knock reference table",
+		XFrom:        "",
+		YFrom:        "Rpm",
+	},
+	// T5.2 name of Regl_tryck_fgaut!, a single value
+	"Regl_tryck_fga!": Axis{
+		Z:            "Regl_tryck_fga!",
+		ZDescription: "Maximum boost in 1st and reverse gear (automatic)",
+	},
 	"Knock_lim_tab!": Axis{
 		X:            "",
 		Y:            "Wait_count_tab!",

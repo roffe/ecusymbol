@@ -203,6 +203,8 @@ var correctionFactors = map[string]float64{
 	"Regl_tryck_fgm!":                               0.01,
 	"Regl_tryck_sgm!":                               0.01,
 	"Regl_tryck_fgaut!":                             0.01,
+	"Regl_tryck_fga!":                               0.01,
+	"Knock_ref_rpm!":                                10,
 	"Ret_delta_rpm!":                                10,
 	"Ret_down_rpm!":                                 10,
 	"Ret_fuel_fak!":                                 0.0009765625, // 128/25,

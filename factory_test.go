@@ -405,9 +405,10 @@ func TestFactoryWrite(t *testing.T) {
 	}
 }
 
-// TestFactoryValues: every symbol's values encode back to its own bytes, and
-// a value moved by one step reads back as written, the way the map editors
-// save.
+// TestFactoryValues: every symbol's values encode back to its own bytes, a
+// value moved by one step in the first, middle or last cell reads back as
+// written, and values at and beyond the type's limits read back clamped, the
+// way the map editors save.
 func TestFactoryValues(t *testing.T) {
 	for _, bin := range factoryBins(t) {
 		t.Run(bin.String(), func(t *testing.T) {
@@ -426,18 +427,46 @@ func TestFactoryValues(t *testing.T) {
 					t.Errorf("%s: values encode to % X, want % X", s.Name, got, orig)
 					continue
 				}
-				// one step up, or down when the value is at the top of its range
-				i := len(vals) / 2
-				edited := slices.Clone(vals)
-				edited[i] += s.Correctionfactor
-				if _, hi := s.valueRange(); s.Ints()[i] == hi {
-					edited[i] = vals[i] - s.Correctionfactor
+				// One step up (down at the top of the range) in the first,
+				// middle and last cell, then the last cell at the bottom and
+				// top of the type's range and one raw step beyond each, which
+				// clamps. The other cells must not move.
+				lo, hi := s.valueRange()
+				cf, off := s.Correctionfactor, T5Offsets[s.Name]
+				ints := s.Ints()
+				type edit struct {
+					i        int
+					in, want float64
 				}
-				if err := s.SetData(s.EncodeFloat64s(edited)); err != nil {
-					t.Fatalf("%s: %v", s.Name, err)
+				var edits []edit
+				for _, i := range []int{0, len(vals) / 2, len(vals) - 1} {
+					v := vals[i] + cf
+					if ints[i] == hi {
+						v = vals[i] - cf
+					}
+					edits = append(edits, edit{i, v, v})
 				}
-				if got := s.Float64s()[i]; math.Abs(got-edited[i]) > s.Correctionfactor/2 {
-					t.Errorf("%s[%d]: wrote %g, reads %g", s.Name, i, edited[i], got)
+				last := len(vals) - 1
+				bottom, top := float64(lo)*cf+off, float64(hi)*cf+off
+				edits = append(edits,
+					edit{last, bottom, bottom}, edit{last, top, top},
+					edit{last, float64(lo-1)*cf + off, bottom}, edit{last, float64(hi+1)*cf + off, top})
+				for _, e := range edits {
+					in := slices.Clone(vals)
+					in[e.i] = e.in
+					if err := s.SetData(s.EncodeFloat64s(in)); err != nil {
+						t.Fatalf("%s: %v", s.Name, err)
+					}
+					got := s.Float64s()
+					if math.Abs(got[e.i]-e.want) > math.Abs(cf)/2 {
+						t.Errorf("%s[%d]: wrote %g, reads %g, want %g", s.Name, e.i, e.in, got[e.i], e.want)
+					}
+					for j := range vals {
+						if j != e.i && got[j] != vals[j] {
+							t.Errorf("%s: writing cell %d moved cell %d from %g to %g", s.Name, e.i, j, vals[j], got[j])
+							break
+						}
+					}
 				}
 				_ = s.SetData(orig)
 			}

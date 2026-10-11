@@ -365,6 +365,17 @@ func (s *Symbol) BytesToInts(data []byte) []int {
 	return ints
 }
 
+// elemSize is how many bytes Ints reads per value for the symbol's type.
+func (s *Symbol) elemSize() int {
+	switch {
+	case s.Type&CHAR != 0 && s.Type&LONG == 0:
+		return 1
+	case s.Type&LONG != 0 && s.Type&CHAR == 0:
+		return 4
+	}
+	return 2
+}
+
 // valueRange is the range of the raw values Ints reads for the symbol's type.
 func (s *Symbol) valueRange() (lo, hi int) {
 	signed := s.Type&SIGNED == SIGNED

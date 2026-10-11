@@ -47,8 +47,10 @@ func (c *Collection) Add(symbols ...*Symbol) {
 	defer c.mu.Unlock()
 	c.symbols = append(c.symbols, symbols...)
 	for _, s := range symbols {
-		if s.Length == 1 {
-			s.Type |= CHAR // one byte can only hold a byte, whatever the table says
+		if int(s.Length)%s.elemSize() != 0 {
+			// not whole values of its type (a 1-byte symbol typed 16-bit, a
+			// damaged length): read it as bytes, whatever the table says
+			s.Type = s.Type&^LONG | CHAR
 		}
 		c.nameMap[s.Name] = s
 		c.numberMap[s.Number] = s

@@ -94,12 +94,21 @@ func checkHeader(data []byte) error {
 	return nil
 }
 
+// maxSymbolNames bounds the unzipped symbol name list; real ones are a few
+// hundred kB.
+const maxSymbolNames = 16 << 20
+
 func unzipSymbols(zipBody []byte) ([]string, error) {
 	zipReader, err := zip.NewReader(bytes.NewReader(zipBody), int64(len(zipBody)))
 	if err != nil {
 		return nil, err
 	}
 	for _, f := range zipReader.File {
+		// The zip reader sizes its buffers from these header fields; a
+		// damaged table must not make it allocate gigabytes.
+		if f.CompressedSize64 > uint64(len(zipBody)) || f.UncompressedSize64 > maxSymbolNames {
+			return nil, fmt.Errorf("zip file %s: sizes %d/%d don't fit a %d byte symbol table", f.Name, f.CompressedSize64, f.UncompressedSize64, len(zipBody))
+		}
 		if f.IsEncrypted() {
 			f.SetPassword(zipPassword)
 		}
@@ -108,9 +117,12 @@ func unzipSymbols(zipBody []byte) ([]string, error) {
 			return nil, fmt.Errorf("failed to open zip file %s: %w", f.Name, err)
 		}
 		defer fl.Close()
-		buf, err := io.ReadAll(fl)
+		buf, err := io.ReadAll(io.LimitReader(fl, maxSymbolNames+1))
 		if err != nil {
 			return nil, fmt.Errorf("failed to read zip file %s: %w", f.Name, err)
+		}
+		if len(buf) > maxSymbolNames {
+			return nil, fmt.Errorf("zip file %s: more than %d bytes of symbol names", f.Name, maxSymbolNames)
 		}
 		return strings.Split(strings.TrimSuffix(string(buf), "\r\n"), "\r\n"), nil //lint:ignore SA4004 we know
 	}

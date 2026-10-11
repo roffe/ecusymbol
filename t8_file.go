@@ -207,6 +207,11 @@ func (t8 *T8File) GetChecksumAreaOffset(data []byte) (int, error) {
 		return 0, err
 	}
 
+	// The layer 1 checksum covers 0x20000 up to the checksum record (2 bytes,
+	// then the 16 byte MD5), which must be in the file.
+	if retval <= 0x20000 || int(retval)+18 > len(data) {
+		return 0, fmt.Errorf("checksum area offset %X is outside the file", uint32(retval))
+	}
 	return int(retval), nil
 }
 

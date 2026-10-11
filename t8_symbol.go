@@ -35,6 +35,9 @@ func loadT8Symbols(fileBytes []byte, cb func(string)) (*Collection, error) {
 		return nil, err
 	}
 
+	if symbtaboffset+symbtablength > len(fileBytes) {
+		return nil, fmt.Errorf("symbol name table %X+%X is outside the file", symbtaboffset, symbtablength)
+	}
 	names, err := ExpandCompressedSymbolNames(fileBytes[symbtaboffset : symbtaboffset+symbtablength])
 	if err != nil {
 		return nil, err
